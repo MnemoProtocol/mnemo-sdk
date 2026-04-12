@@ -2,55 +2,26 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+*.egg
 dist/
 build/
-*.egg
 
 # Virtual environments
 .venv/
 venv/
 env/
 
-# IDE
+# IDE / OS
 .idea/
 .vscode/
 *.swp
-*.swo
-*~
-
-# Test / evaluation output
-runs/
-*.json
-!.claude/launch.json
-!dashboard/package.json
-!dashboard/tsconfig.json
-*.csv
-*.png
-
-# SQLite databases (runtime artifacts)
-*.db
-*.db-shm
-*.db-wal
-
-# OS
 .DS_Store
-Thumbs.db
 
-# Hypothesis test cache
-.hypothesis/
-
-# Pytest cache
+# Pytest / Hypothesis
 .pytest_cache/
+.hypothesis/
 
 # Env files
 .env
 .env.*
 !.env.example
-
-# Scaffold files (colon-named artifacts from dev)
-*:*
-mnemo_eval/.cache/
-
-# Dashboard frontend
-dashboard/node_modules/
-dashboard/dist/

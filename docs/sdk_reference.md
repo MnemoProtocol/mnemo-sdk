@@ -46,7 +46,7 @@ Embed a watermark into a vector via `POST /v1/embed`.
 
 **Returns:** `EmbedResult`
 
-#### `verify(vector) -> VerifyResult`
+#### `verify(vector) -> Optional[VerifyResult]`
 
 Verify a vector for a Mnemo watermark via `POST /v1/verify`.
 
@@ -54,7 +54,7 @@ Verify a vector for a Mnemo watermark via `POST /v1/verify`.
 |--------------|----------------------------|-------------------------------------|
 | `vector`     | `list[float]` or `ndarray` | The vector to verify.               |
 
-**Returns:** `VerifyResult`
+**Returns:** `VerifyResult` if a watermark is detected, otherwise `None`.
 
 #### `health() -> dict`
 
@@ -122,23 +122,24 @@ Convert `watermarked_vector` to a numpy array. Raises `ImportError` if numpy is 
 
 ## VerifyResult
 
-Dataclass returned from `MnemoClient.verify()`.
+Dataclass returned from `MnemoClient.verify()` when a watermark is detected.
+If no watermark is detected, `verify()` returns `None` instead of a `VerifyResult`.
 
 ```python
 @dataclass
 class VerifyResult:
     verified: bool
     confidence: float
-    vector_uid: Optional[str] = None
-    policy_ok: bool = False
+    vector_uid: str
+    policy_ok: bool
 ```
 
-| Field        | Type            | Description                                      |
-|--------------|-----------------|--------------------------------------------------|
-| `verified`   | `bool`          | `True` if a watermark was detected.              |
-| `confidence` | `float`         | Confidence score between 0.0 and 1.0.            |
-| `vector_uid` | `Optional[str]` | The watermark UID, if detected.                  |
-| `policy_ok`  | `bool`          | Whether the watermark policy is still valid.     |
+| Field        | Type    | Description                                                       |
+|--------------|---------|-------------------------------------------------------------------|
+| `verified`   | `bool`  | Always `True` for a returned `VerifyResult`.                      |
+| `confidence` | `float` | Confidence score between 0.0 and 1.0.                             |
+| `vector_uid` | `str`   | The watermark UID for the detected vector.                        |
+| `policy_ok`  | `bool`  | Whether the vector is being used within its embed-time policy.    |
 
 ---
 

@@ -9,7 +9,7 @@ from mnemo_sdk.errors import MnemoAPIError, MnemoErrorCode, MnemoValidationError
 from mnemo_sdk.types import EmbedResult, MnemoConfig, PolicyConfig, VerifyResult
 
 _SDK_VERSION = "3.0.0"
-_USER_AGENT = f"mnemo-sdk/{_SDK_VERSION} python"
+_USER_AGENT = f"mnemo-protocol/{_SDK_VERSION} python"
 
 
 class MnemoClient:
@@ -112,7 +112,7 @@ class MnemoClient:
         vector_uid = data.get("vector_uid")
         if not vector_uid:
             raise MnemoAPIError(
-                message="Invariant violation: verified response missing vector_uid",
+                message="Malformed response: verified result missing vector_uid",
                 status_code=502,
                 code=MnemoErrorCode.SERVER_ERROR,
             )
@@ -322,7 +322,7 @@ class MnemoBatch:
             vector_uid = item.get("vector_uid")
             if not vector_uid:
                 raise MnemoAPIError(
-                    message="Invariant violation: verified response missing vector_uid",
+                    message="Malformed response: verified result missing vector_uid",
                     status_code=502,
                     code=MnemoErrorCode.SERVER_ERROR,
                 )
