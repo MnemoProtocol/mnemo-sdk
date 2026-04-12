@@ -1,0 +1,243 @@
+{
+  "schema_version": "1.0",
+  "name": "Mnemo",
+  "description": "Vector embedding watermarking and provenance infrastructure for AI pipelines",
+  "tagline": "Prove ownership of AI embeddings. One API call. Any model. Any vector DB.",
+  "homepage": "https://mnemo.ai",
+  "api_base": "https://api.mnemo.ai/v1",
+  "openapi_spec": "https://docs.mnemo.ai/openapi.json",
+  "docs": "https://docs.mnemo.ai",
+  "status_page": "https://status.mnemo.ai",
+
+  "agent_support": {
+    "native": true,
+    "mcp_server": "https://mcp.mnemo.ai/sse",
+    "mcp_tools": ["embed", "verify", "embed_batch", "verify_batch", "get_usage", "health_check"],
+    "autonomous_provisioning": true,
+    "self_service_api_key": "https://app.mnemo.ai/signup",
+    "programmatic_key_rotation": "https://api.mnemo.ai/v1/account/keys",
+    "usage_query_endpoint": "https://api.mnemo.ai/v1/usage",
+    "rate_limit_headers": true,
+    "quota_warning_at_pct": 80
+  },
+
+  "authentication": {
+    "type": "bearer_token",
+    "header": "Authorization",
+    "format": "Bearer mk_live_{key}",
+    "test_prefix": "mk_test_",
+    "live_prefix": "mk_live_",
+    "key_source": "https://app.mnemo.ai/keys",
+    "env_var_recommended": "MNEMO_API_KEY"
+  },
+
+  "install": {
+    "python": "pip install mnemo-protocol",
+    "pypi": "https://pypi.org/project/mnemo-protocol/",
+    "dependencies": ["requests"],
+    "min_python": "3.9"
+  },
+
+  "core_operations": [
+    {
+      "name": "embed",
+      "method": "POST",
+      "path": "/v1/embed",
+      "description": "Watermark a single embedding vector. Returns vector_uid and watermarked_vector.",
+      "required_params": ["vector", "model_id"],
+      "optional_params": ["policy"],
+      "returns": ["vector_uid", "watermarked_vector", "created_at", "dimensions"],
+      "billing_event": false,
+      "idempotent": false
+    },
+    {
+      "name": "verify",
+      "method": "POST",
+      "path": "/v1/verify",
+      "description": "Verify watermark on a vector. Returns verified status, confidence score, and original vector_uid.",
+      "required_params": ["vector"],
+      "returns": ["verified", "confidence", "vector_uid", "policy_ok"],
+      "billing_event": true,
+      "idempotent": true,
+      "note": "This is the primary billable operation. Charged per call above plan quota."
+    },
+    {
+      "name": "embed_batch",
+      "method": "POST",
+      "path": "/v1/embed/batch",
+      "description": "Watermark up to 1000 vectors in a single request.",
+      "max_batch_size": 1000,
+      "billing_event": false
+    },
+    {
+      "name": "verify_batch",
+      "method": "POST",
+      "path": "/v1/verify/batch",
+      "description": "Verify up to 1000 vectors in a single request.",
+      "max_batch_size": 1000,
+      "billing_event": true,
+      "note": "Each vector in the batch counts as one verify() call against quota."
+    },
+    {
+      "name": "health",
+      "method": "GET",
+      "path": "/v1/health",
+      "description": "Service liveness check. No authentication required.",
+      "auth_required": false,
+      "billing_event": false,
+      "rate_limited": false
+    },
+    {
+      "name": "usage",
+      "method": "GET",
+      "path": "/v1/usage",
+      "description": "Current period usage, quota, and overage. Safe for agents to poll frequently.",
+      "billing_event": false,
+      "rate_limited": false,
+      "returns": ["period_start", "period_end", "embeds_used", "embeds_limit", "verifies_used", "verifies_limit", "overage_verifies", "overage_amount_usd", "tier"]
+    }
+  ],
+
+  "pricing": {
+    "model": "verify_per_call_overage",
+    "philosophy": "Embed cheap, charge on proof. The value is in verification, not ingestion.",
+    "currency": "USD",
+    "billing_provider": "Stripe",
+    "tiers": [
+      {
+        "id": "free",
+        "name": "Free",
+        "price_usd_monthly": 0,
+        "embeds_included": 50000,
+        "verifies_included": 1000,
+        "overage_per_verify_usd": null,
+        "rate_limit_rps": 5,
+        "sla_pct": null,
+        "card_required": false,
+        "signup_url": "https://app.mnemo.ai/signup"
+      },
+      {
+        "id": "starter",
+        "name": "Starter",
+        "price_usd_monthly": 29,
+        "embeds_included": 500000,
+        "verifies_included": 50000,
+        "overage_per_verify_usd": 0.003,
+        "rate_limit_rps": 50,
+        "sla_pct": 99.0,
+        "card_required": true,
+        "checkout_url": "https://buy.stripe.com/mnemo-starter"
+      },
+      {
+        "id": "growth",
+        "name": "Growth",
+        "price_usd_monthly": 149,
+        "embeds_included": 5000000,
+        "verifies_included": 1000000,
+        "overage_per_verify_usd": 0.0015,
+        "rate_limit_rps": 200,
+        "sla_pct": 99.9,
+        "card_required": true,
+        "trial_days": 14,
+        "checkout_url": "https://buy.stripe.com/mnemo-growth"
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "price_usd_monthly": 499,
+        "embeds_included": 25000000,
+        "verifies_included": 10000000,
+        "overage_per_verify_usd": 0.00075,
+        "rate_limit_rps": 500,
+        "sla_pct": 99.9,
+        "card_required": true,
+        "checkout_url": "https://buy.stripe.com/mnemo-scale"
+      },
+      {
+        "id": "enterprise",
+        "name": "Enterprise",
+        "price_usd_monthly": null,
+        "embeds_included": null,
+        "verifies_included": null,
+        "overage_per_verify_usd": "negotiated",
+        "rate_limit_rps": "negotiated",
+        "sla_pct": "custom",
+        "card_required": false,
+        "contact": "enterprise@mnemo.ai"
+      }
+    ]
+  },
+
+  "policy_config": {
+    "ttl_hours": {
+      "type": "integer",
+      "min": 1,
+      "max": 87600,
+      "default": 8760,
+      "description": "How long Mnemo retains key material for future verify() calls"
+    },
+    "usage_class": {
+      "type": "enum",
+      "values": ["commercial", "internal", "research", "trial", "development"],
+      "description": "Governs data handling, audit retention, and billing classification"
+    },
+    "retention": {
+      "type": "enum",
+      "values": ["minimal", "standard", "extended", "permanent"],
+      "description": "Key material retention override. extended and permanent require Growth+"
+    },
+    "region": {
+      "type": "enum",
+      "values": ["us-east", "us-west", "eu-west", "ap-southeast"],
+      "default": "us-east",
+      "description": "Data residency for watermark key material"
+    }
+  },
+
+  "sdk_symbols": {
+    "public": [
+      "MnemoClient", "MnemoConfig", "MnemoBatch",
+      "EmbedResult", "VerifyResult", "PolicyConfig", "PolicyBuilder",
+      "create_policy", "MnemoException", "MnemoAPIError",
+      "MnemoValidationError", "MnemoErrorCode"
+    ],
+    "private": "All algorithm, key derivation, and detection logic is server-side only"
+  },
+
+  "compatibility": {
+    "embedding_models": [
+      "openai/text-embedding-3-small",
+      "openai/text-embedding-3-large",
+      "cohere/embed-v3",
+      "voyage/voyage-3",
+      "mistral/mistral-embed",
+      "huggingface/sentence-transformers",
+      "any_local_model"
+    ],
+    "vector_databases": [
+      "pinecone", "qdrant", "weaviate", "faiss", "chroma",
+      "milvus", "pgvector", "redis-vss", "opensearch-knn"
+    ],
+    "frameworks": [
+      "langchain", "llamaindex", "haystack", "dspy", "any_rag_pipeline"
+    ]
+  },
+
+  "contact": {
+    "general": "hello@mnemo.ai",
+    "enterprise": "enterprise@mnemo.ai",
+    "security": "security@mnemo.ai",
+    "legal": "legal@mnemo.ai",
+    "support": "support@mnemo.ai"
+  },
+
+  "legal": {
+    "terms_url": "https://mnemo.ai/terms",
+    "terms_machine_readable": "https://mnemo.ai/.well-known/terms.json",
+    "privacy_url": "https://mnemo.ai/privacy",
+    "license_url": "https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE",
+    "dpa_available": true,
+    "dpa_contact": "legal@trymnemo.com",
+    "governing_law": "Delaware, USA"
+  }
+}

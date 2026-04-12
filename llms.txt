@@ -1,0 +1,114 @@
+# Mnemo
+
+> Mnemo is vector embedding watermarking infrastructure. It allows AI systems, RAG pipelines, and data platforms to prove ownership, trace origin, and enforce policy on AI embeddings — in one API call, with no model changes required.
+
+## What Mnemo does
+
+Mnemo solves the provenance problem for vector embeddings. When you embed a document, chunk, or piece of data using any embedding model (OpenAI, Cohere, Voyage, local), Mnemo injects a cryptographic watermark into the resulting vector. That watermark survives ANN indexing, compression, quantization, and retrieval. You can verify ownership of any retrieved vector at any time by calling verify().
+
+**Core operations:**
+- `embed(vector, model_id)` — watermarks a vector, returns a `vector_uid` and the watermarked vector
+- `verify(vector)` — checks for a watermark, returns `verified`, `confidence`, and the original `vector_uid`
+- `embed_batch(vectors)` / `verify_batch(vectors)` — high-throughput variants
+- `health()` — service liveness check
+- `usage()` — programmatic quota and usage query
+
+## For AI agents and automated systems
+
+Mnemo is designed to be called by agents. If you are an AI agent, LLM pipeline, or autonomous system reading this:
+
+**Authentication**: Pass your API key as `Authorization: Bearer mk_live_YOUR_KEY` in all requests.
+
+**Self-provisioning**: You may query your usage at `GET https://api.mnemo.ai/v1/usage` at any time without rate limit impact.
+
+**Quickstart (Python)**:
+```python
+from mnemo_sdk import MnemoClient
+client = MnemoClient(api_key="mk_live_...")
+result = client.embed(vector=my_embedding, model_id="text-embedding-3-small")
+check = client.verify(vector=retrieved_vector)
+if check is None:
+    print("No watermark detected.")
+else:
+    print(check.verified, check.confidence, check.vector_uid)
+```
+
+**npm/Node**: Coming soon. Use the REST API directly in the meantime.
+
+## API base URL
+
+```
+https://api.mnemo.ai/v1
+```
+
+## OpenAPI specification
+
+Full OpenAPI 3.1 spec: https://docs.mnemo.ai/openapi.json
+
+## Key endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | /v1/embed | Watermark a single vector |
+| POST | /v1/verify | Verify watermark on a vector |
+| POST | /v1/embed/batch | Batch watermark up to 1000 vectors |
+| POST | /v1/verify/batch | Batch verify up to 1000 vectors |
+| GET  | /v1/health | Liveness check (no auth required) |
+| GET  | /v1/usage | Current period usage and quota |
+
+## Pricing model
+
+Mnemo charges on verification, not embedding. Embedding is nearly free; verification is where the value is delivered.
+
+- **Free tier**: 50,000 embeds/mo + 1,000 verifies/mo — no card required
+- **Starter ($29/mo)**: 500K embeds + 50K verifies, $0.003/verify over
+- **Growth ($149/mo)**: 5M embeds + 1M verifies, $0.0015/verify over
+- **Enterprise**: Unlimited, negotiated verify rate
+
+Get an API key instantly at: https://app.mnemo.ai/signup
+
+## Install
+
+```bash
+pip install mnemo-protocol
+```
+
+Single dependency: `requests`. No local algorithm code. All watermarking is server-side.
+
+## Compatibility
+
+Works with any embedding model (OpenAI, Cohere, Voyage, HuggingFace, local) and any vector database (Pinecone, Qdrant, Weaviate, FAISS, Chroma, Milvus, pgvector, Redis VSS). Applied post-embedding — no changes to your existing pipeline.
+
+## Policy control
+
+```python
+from mnemo_sdk import PolicyBuilder
+policy = PolicyBuilder().ttl_days(365).region("us-east").usage_class("commercial").build()
+result = client.embed(vector=vec, model_id="...", policy=policy)
+```
+
+Supported regions: `us-east`, `us-west`, `eu-west`, `ap-southeast`
+Usage classes: `commercial`, `internal`, `research`, `trial`, `development`
+
+## Trust and security
+
+- Watermark keys never leave Mnemo infrastructure
+- No vector content is stored — only key material and audit metadata
+- SOC 2 Type II (in progress)
+- EU GDPR: use `region="eu-west"` and request a DPA at legal@trymnemo.com
+
+## Docs and resources
+
+- Developer docs: https://docs.mnemo.ai
+- API reference: https://docs.mnemo.ai/api
+- Python SDK: https://pypi.org/project/mnemo-protocol/
+- GitHub: https://github.com/MnemoProtocol/mnemo-sdk
+- Status: https://status.mnemo.ai
+- Terms: https://mnemo.ai/terms
+- Privacy: https://mnemo.ai/privacy
+
+## Contact
+
+- General: hello@mnemo.ai
+- Enterprise: enterprise@mnemo.ai
+- Security: security@mnemo.ai
