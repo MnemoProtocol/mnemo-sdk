@@ -1,5 +1,9 @@
 # Guarantees and Limitations
 
+> **This document is informational only and does not create contractual
+> obligations, warranties, or guarantees.** For binding terms, see
+> [LICENSE](../LICENSE) and [TERMS.md](../TERMS.md).
+
 ## What the SDK does
 
 The Mnemo SDK is a thin client for the Mnemo watermarking API. It does
@@ -63,3 +67,10 @@ decision should pair the verdict with their own threshold appropriate
 to their use case. When the API returns `None`, treat the vector as
 unverified — do not infer the absence of a watermark with certainty
 from a single call.
+
+## Right to modify
+
+Mnemo may modify, improve, or deprecate verification methods,
+algorithms, API behavior, and SDK capabilities at any time without
+prior notice. The descriptions in this document reflect the current
+release and are subject to change.

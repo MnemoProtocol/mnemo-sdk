@@ -6,6 +6,9 @@ Mnemo SDK is a Python client for the Mnemo watermarking API. It lets you embed i
 
 ## Installation
 
+> **By installing or using this SDK, you agree to the
+> [Terms of Use](TERMS.md) and [License](LICENSE).**
+
 ```bash
 pip install mnemo-protocol
 ```
@@ -32,7 +35,10 @@ print(result.vector_uid)
 
 # Verify a watermark
 check = client.verify(vector=result.watermarked_vector)
-print(check.verified, check.confidence)
+if check is None:
+    print("No watermark detected.")
+else:
+    print(check.verified, check.confidence)
 ```
 
 ## Features
@@ -109,12 +115,15 @@ Full reference documentation is available in the [docs/](docs/) directory:
 
 - [Quickstart Guide](docs/quickstart.md)
 - [SDK Reference](docs/sdk_reference.md)
+- [Guarantees and Limitations](docs/GUARANTEES.md)
 
 ## Requirements
 
 - Python 3.9+
 - `requests` library (installed automatically)
 
-## License
+## Legal
 
-See [LICENSE](LICENSE) for details.
+- [License](LICENSE) — Proprietary evaluation license
+- [Terms of Use](TERMS.md) — Binding terms for SDK and API usage
+- [Guarantees and Limitations](docs/GUARANTEES.md) — What the SDK does and does not guarantee

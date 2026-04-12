@@ -1,38 +1,110 @@
 Copyright (c) 2025-2026 Mnemo LLC. All rights reserved.
 
-PROPRIETARY SOFTWARE LICENSE
+MNEMO PROPRIETARY SOFTWARE LICENSE
 
-This software and associated documentation files (the "Software") are the
-proprietary and confidential property of Mnemo LLC.
+Effective Date: April 2026
+Version: 1.0
 
-RESTRICTIONS
+1. DEFINITIONS
 
-1. You may not use, copy, modify, merge, publish, distribute, sublicense,
-   and/or sell copies of the Software without a valid license agreement
-   with Mnemo LLC.
+"Software" means the Mnemo SDK, including all source code, object code,
+documentation, and associated files distributed in this repository or via
+package managers (e.g., PyPI).
 
-2. You may not reverse engineer, decompile, or disassemble the Software,
-   except to the extent that such activity is expressly permitted by
-   applicable law notwithstanding this limitation.
+"Mnemo" means Mnemo LLC, a Delaware limited liability company.
 
-3. You may not remove or alter any proprietary notices, labels, or marks
-   on the Software.
+"You" means the individual or entity exercising rights under this License.
 
-GRANT OF LICENSE
+"API" means the Mnemo watermarking API accessible at api.mnemo.ai or such
+other endpoint as Mnemo may designate.
 
-Use of this Software is governed by the terms of your license agreement
-with Mnemo LLC. If you do not have a valid license agreement, you are not
-authorized to use this Software.
+"Commercial Agreement" means a separate written agreement between You and
+Mnemo governing production use of the Software and API.
 
-WARRANTY DISCLAIMER
+2. LIMITED LICENSE GRANT
+
+Subject to the terms of this License, Mnemo grants You a limited,
+non-exclusive, non-transferable, revocable license to use the Software
+solely for:
+
+  (a) evaluation and testing;
+  (b) development and integration with Your applications; and
+  (c) non-production use.
+
+Production use of the Software in connection with the API requires a valid
+API key and is governed by the Terms of Use included with this Software
+(TERMS.md) and, where applicable, a Commercial Agreement.
+
+3. RESTRICTIONS
+
+You may not:
+
+  (a) use, copy, modify, merge, publish, distribute, sublicense, or sell
+      the Software except as expressly permitted herein;
+  (b) reverse engineer, decompile, or disassemble the Software or the API,
+      except to the extent such activity is expressly permitted by
+      applicable law notwithstanding this limitation;
+  (c) remove or alter any proprietary notices, labels, or marks;
+  (d) use the Software to develop a competing product or service; or
+  (e) attempt to extract, reconstruct, or replicate Mnemo's watermarking
+      algorithms through any means including analysis of API inputs and
+      outputs.
+
+4. INTELLECTUAL PROPERTY
+
+The Software and all related intellectual property rights are and shall
+remain the exclusive property of Mnemo. This License does not convey any
+ownership interest in the Software. All rights not expressly granted herein
+are reserved by Mnemo.
+
+5. DISCLAIMER OF WARRANTIES
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-MNEMO LLC BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN
-AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. MNEMO DOES NOT
+WARRANT THAT THE SOFTWARE OR API WILL BE UNINTERRUPTED, ERROR-FREE, OR
+FREE OF HARMFUL COMPONENTS.
 
-CONTACT
+6. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL MNEMO'S TOTAL AGGREGATE LIABILITY ARISING OUT OF OR
+RELATED TO THIS LICENSE OR THE USE OF THE SOFTWARE EXCEED THE GREATER OF
+(A) ONE HUNDRED U.S. DOLLARS ($100) OR (B) THE TOTAL AMOUNTS PAID BY YOU
+TO MNEMO IN THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE
+CLAIM.
+
+IN NO EVENT SHALL MNEMO BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
+CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR DAMAGES FOR LOSS OF PROFITS,
+REVENUE, DATA, OR BUSINESS OPPORTUNITY, REGARDLESS OF THE THEORY OF
+LIABILITY, EVEN IF MNEMO HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGES.
+
+7. GOVERNING LAW AND VENUE
+
+This License shall be governed by and construed in accordance with the laws
+of the State of Delaware, without regard to its conflict of laws principles.
+Any dispute arising under this License shall be subject to the exclusive
+jurisdiction of the state and federal courts located in the State of
+Delaware, and each party consents to the personal jurisdiction of such
+courts.
+
+8. EXPORT COMPLIANCE
+
+You shall comply with all applicable export control laws and regulations,
+including without limitation the U.S. Export Administration Regulations
+(EAR) and sanctions programs administered by the Office of Foreign Assets
+Control (OFAC). You represent that You are not located in, or a national or
+resident of, any country subject to U.S. embargo, and that You are not on
+any U.S. government restricted party list.
+
+9. TERMINATION
+
+This License is effective until terminated. Mnemo may terminate this
+License immediately upon written notice if You breach any term of this
+License. Upon termination, You must cease all use of the Software and
+destroy all copies in Your possession.
+
+10. CONTACT
 
 For licensing inquiries, contact: licensing@trymnemo.com
+For commercial agreements, contact: sales@trymnemo.com
