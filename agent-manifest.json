@@ -12,7 +12,7 @@
   "agent_support": {
     "native": true,
     "mcp_server": "https://mcp.mnemo.ai/sse",
-    "mcp_tools": ["embed", "verify", "embed_batch", "verify_batch", "get_usage", "health_check"],
+    "mcp_tools": ["embed", "verify", "get_usage", "health_check"],
     "autonomous_provisioning": true,
     "self_service_api_key": "https://app.mnemo.ai/signup",
     "programmatic_key_rotation": "https://api.mnemo.ai/v1/account/keys",
@@ -43,40 +43,25 @@
       "name": "embed",
       "method": "POST",
       "path": "/v1/embed",
-      "description": "Watermark a single embedding vector. Returns vector_uid and watermarked_vector.",
+      "description": "Watermark a single embedding vector. Returns vector_uid and watermarked_vector. Optionally accepts raw `subject` context; the server derives a tenant-scoped subject_fingerprint and (when subject binding is enabled+configured server-side) returns a server-issued subject_proof carrier.",
       "required_params": ["vector", "model_id"],
-      "optional_params": ["policy"],
-      "returns": ["vector_uid", "watermarked_vector", "created_at", "dimensions"],
+      "optional_params": ["policy", "subject"],
+      "returns": ["vector_uid", "watermarked_vector", "created_at", "dimensions", "subject_proof"],
       "billing_event": false,
-      "idempotent": false
+      "idempotent": false,
+      "note": "`subject` is RAW client context only; the server derives all trust (fingerprint + proof). The client cannot supply subject_fingerprint/trust_mode/proof fields. `subject_proof` is absent unless a subject was supplied and the transport is enabled+configured."
     },
     {
       "name": "verify",
       "method": "POST",
       "path": "/v1/verify",
-      "description": "Verify watermark on a vector. Returns verified status, confidence score, and original vector_uid.",
+      "description": "Verify watermark on a vector. Returns verified status, confidence score, and original vector_uid. Optionally accepts an opaque subject_proof carrier (server-verified).",
       "required_params": ["vector"],
-      "returns": ["verified", "confidence", "vector_uid", "policy_ok"],
+      "optional_params": ["subject_proof"],
+      "returns": ["verified", "confidence", "vector_uid", "policy_ok", "signals"],
       "billing_event": true,
       "idempotent": true,
-      "note": "This is the primary billable operation. Charged per call above plan quota."
-    },
-    {
-      "name": "embed_batch",
-      "method": "POST",
-      "path": "/v1/embed/batch",
-      "description": "Watermark up to 1000 vectors in a single request.",
-      "max_batch_size": 1000,
-      "billing_event": false
-    },
-    {
-      "name": "verify_batch",
-      "method": "POST",
-      "path": "/v1/verify/batch",
-      "description": "Verify up to 1000 vectors in a single request.",
-      "max_batch_size": 1000,
-      "billing_event": true,
-      "note": "Each vector in the batch counts as one verify() call against quota."
+      "note": "This is the primary billable operation. Charged per call above plan quota. `subject_proof` is an opaque, UNTRUSTED carrier replayed verbatim; the server re-verifies it. It is consulted only on a STRICT oracle-only Case 3 verify under FP-squash — not on every verify."
     },
     {
       "name": "health",
@@ -97,6 +82,22 @@
       "returns": ["period_start", "period_end", "embeds_used", "embeds_limit", "verifies_used", "verifies_limit", "overage_verifies", "overage_amount_usd", "tier"]
     }
   ],
+
+  "subject_binding": {
+    "status": "optional",
+    "summary": "Optional trusted subject binding. The server owns all trust; the SDK is transport only.",
+    "sdk_types": ["Subject", "SubjectProof", "VerifySignals"],
+    "rules": [
+      "subject is RAW client context; the server derives the tenant-scoped subject_fingerprint.",
+      "subject_proof is a server-issued, opaque, UNTRUSTED carrier; the SDK never validates or trusts it; the server re-verifies it (tenant-scoped, UID-bound HMAC).",
+      "STRICT is the provenance-grade / claim-bearing posture.",
+      "subject_proof is consulted only on a STRICT oracle-only Case 3 verify under FP-squash; it does not run on every verify and does not imply always-on latency.",
+      "BALANCED and HIGH_RECALL are non-claim-bearing for PQ / oracle-only subject-proof recovery.",
+      "missing or invalid proofs fail closed server-side."
+    ],
+    "no_production_pq_claim": true,
+    "batch": "Not supported. There are no batch embed/verify endpoints or SDK methods; batch will only exist if/when the Mnemo core runtime defines an explicit metered batch contract."
+  },
 
   "pricing": {
     "model": "verify_per_call_overage",
@@ -196,9 +197,10 @@
 
   "sdk_symbols": {
     "public": [
-      "MnemoClient", "MnemoConfig", "MnemoBatch",
+      "MnemoClient", "MnemoConfig",
       "EmbedResult", "VerifyResult", "PolicyConfig", "PolicyBuilder",
-      "create_policy", "MnemoException", "MnemoAPIError",
+      "create_policy", "Subject", "SubjectProof", "VerifySignals",
+      "MnemoException", "MnemoAPIError",
       "MnemoValidationError", "MnemoErrorCode"
     ],
     "private": "All algorithm, key derivation, and detection logic is server-side only"

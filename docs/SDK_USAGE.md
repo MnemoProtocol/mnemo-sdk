@@ -55,6 +55,37 @@ if result is not None:
 
 When verification fails, `verify()` returns `None` — not a `VerifyResult` with `verified=False`.
 
+`VerifyResult` may also carry an optional `signals` diagnostic block (method,
+spectral/oracle statuses, oracle metrics, `mode`, `latency_ms`).
+
+---
+
+### Trusted subject binding (optional)
+
+`embed()` accepts an optional `subject` (a `Subject` or dict of **raw** context),
+and `verify()` accepts an optional `subject_proof` (the server-issued carrier from a
+prior embed). All subject-aware calls route to the core runtime, which does all
+trust work; **the SDK is transport only** — it never derives a fingerprint, mints a
+proof, validates a proof, or interprets corroboration.
+
+```python
+from mnemo_sdk import Subject
+
+emb = client.embed(vec, model_id="m", subject=Subject(
+    subject_uri="mnemo://subj/tenant/document/doc-1", subject_type="document"))
+# emb.subject_proof is an opaque carrier (or None if the server transport is off).
+check = client.verify(emb.watermarked_vector, subject_proof=emb.subject_proof)
+```
+
+- `subject` is **raw context**; the server derives `subject_fingerprint`. The SDK
+  rejects any client-supplied `subject_fingerprint` / `trust_mode` / `proof*`.
+- `subject_proof` is **opaque and untrusted**; the SDK replays it verbatim and the
+  **server** re-verifies it.
+- The proof is consulted **only** on a STRICT oracle-only Case 3 verify under
+  FP-squash (the provenance-grade, claim-bearing path) — not on every verify, and
+  with no implied always-on latency. **BALANCED/HIGH_RECALL are non-claim-bearing**
+  for subject-proof / oracle-only recovery.
+
 ---
 
 ### `client.health()`
@@ -80,12 +111,3 @@ except MnemoValidationError as e:
     print(f"Invalid input: {e}")
 ```
 
-## Batch Operations
-
-```python
-from mnemo_sdk import MnemoBatch
-
-batch = MnemoBatch(client)
-results = batch.embed_batch(vectors, model_id="test")
-checks = batch.verify_batch(vectors)
-```

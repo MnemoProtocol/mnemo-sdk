@@ -120,7 +120,7 @@ class TestMnemoClient:
         with pytest.raises(MnemoAPIError) as exc_info:
             client.verify(vector=[0.1, 0.2, 0.3])
 
-        assert "Malformed response" in exc_info.value.message
+        assert "Invariant violation" in exc_info.value.message
 
     @patch("mnemo_sdk.client.requests.Session")
     def test_health_check(self, MockSession, mock_api_url, mock_api_key):

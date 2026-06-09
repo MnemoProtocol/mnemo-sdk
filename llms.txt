@@ -7,9 +7,8 @@
 Mnemo solves the provenance problem for vector embeddings. When you embed a document, chunk, or piece of data using any embedding model (OpenAI, Cohere, Voyage, local), Mnemo injects a cryptographic watermark into the resulting vector. That watermark survives ANN indexing, compression, quantization, and retrieval. You can verify ownership of any retrieved vector at any time by calling verify().
 
 **Core operations:**
-- `embed(vector, model_id)` — watermarks a vector, returns a `vector_uid` and the watermarked vector
-- `verify(vector)` — checks for a watermark, returns `verified`, `confidence`, and the original `vector_uid`
-- `embed_batch(vectors)` / `verify_batch(vectors)` — high-throughput variants
+- `embed(vector, model_id, *, subject=None)` — watermarks a vector; returns a `vector_uid` and the watermarked vector. Optionally accepts raw `subject` context (server-derived binding); when subject binding is enabled+configured server-side, the result also carries a server-issued `subject_proof`.
+- `verify(vector, *, subject_proof=None)` — checks for a watermark; returns `verified`, `confidence`, the original `vector_uid`, and optional `signals`. Optionally accepts an opaque `subject_proof` carrier, which the server re-verifies.
 - `health()` — service liveness check
 - `usage()` — programmatic quota and usage query
 
@@ -49,12 +48,36 @@ Full OpenAPI 3.1 spec: https://docs.mnemo.ai/openapi.json
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | /v1/embed | Watermark a single vector |
-| POST | /v1/verify | Verify watermark on a vector |
-| POST | /v1/embed/batch | Batch watermark up to 1000 vectors |
-| POST | /v1/verify/batch | Batch verify up to 1000 vectors |
+| POST | /v1/embed | Watermark a single vector (optional `subject` input) |
+| POST | /v1/verify | Verify watermark on a vector (optional `subject_proof` input) |
 | GET  | /v1/health | Liveness check (no auth required) |
 | GET  | /v1/usage | Current period usage and quota |
+
+There are **no batch endpoints** and the SDK exposes **no batch methods**. Batch embed/verify is not supported; it will only appear if/when the Mnemo core runtime defines an explicit, metered batch contract.
+
+## Trusted subject binding (optional)
+
+You may optionally bind a **subject** to an embed and replay a **server-issued proof** at verify time. All trust work happens server-side in the Mnemo core runtime (canonicalization, proof issuance, proof verification, tenant scoping, metering, fail-closed gating). The SDK is **transport only** — it never derives a fingerprint, mints a proof, or validates/trusts a proof.
+
+SDK types: `Subject`, `SubjectProof`, `VerifySignals`.
+
+```python
+from mnemo_sdk import MnemoClient, Subject
+client = MnemoClient(api_key="mk_live_...")
+emb = client.embed(my_embedding, model_id="text-embedding-3-small",
+                   subject=Subject(subject_uri="mnemo://subj/tenant/document/doc-1",
+                                   subject_type="document"))
+# emb.subject_proof is an opaque, server-issued carrier (or None if the server
+# transport is disabled). Store it; replay it verbatim on verify.
+check = client.verify(emb.watermarked_vector, subject_proof=emb.subject_proof)
+```
+
+Contract:
+- `subject` is **raw client context**; the **server** derives the tenant-scoped `subject_fingerprint`. The client cannot supply a fingerprint, trust mode, or any proof field.
+- `subject_proof` is a **server-issued, opaque, untrusted carrier**. The SDK passes it back verbatim; the **server** re-verifies it (a tenant-scoped, UID-bound HMAC). Do not parse it for trust.
+- The proof is consulted **only** on an oracle-only "Case 3" verification under **STRICT** mode (the provenance-grade, claim-bearing posture) with the server's FP-squash gate enabled — **not on every verify**, and with no implied always-on latency.
+- **BALANCED / HIGH_RECALL are non-claim-bearing** for subject-proof / compressed (PQ) oracle-only recovery.
+- Missing/invalid proofs **fail closed** server-side.
 
 ## Pricing model
 

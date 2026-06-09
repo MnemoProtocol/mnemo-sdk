@@ -97,27 +97,6 @@ result = client.embed(
 )
 ```
 
-## Batch Operations
-
-Use `MnemoBatch` when you need to process multiple vectors in a single API call:
-
-```python
-from mnemo_sdk import MnemoBatch
-
-batch = MnemoBatch(client)
-
-# Batch embed
-results = batch.embed_batch(
-    vectors=[[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]],
-    model_id="text-embedding-3-small",
-)
-
-# Batch verify
-checks = batch.verify_batch(
-    vectors=[r.watermarked_vector for r in results],
-)
-```
-
 ## Error Handling
 
 The SDK raises typed exceptions for different failure modes:
@@ -141,7 +120,5 @@ The client automatically retries on HTTP 429 (rate limit) responses, using the `
 |--------|--------------------|--------------------------------|
 | POST   | `/v1/embed`        | Embed a watermark              |
 | POST   | `/v1/verify`       | Verify a vector                |
-| POST   | `/v1/embed/batch`  | Batch embed                    |
-| POST   | `/v1/verify/batch` | Batch verify                   |
 | GET    | `/v1/health`       | Service health check           |
 | GET    | `/v1/usage`        | Account usage statistics       |
