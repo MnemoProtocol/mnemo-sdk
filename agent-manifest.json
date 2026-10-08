@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "name": "Mnemo Python SDK",
   "package": "mnemo-protocol",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "description": "Python client for the Mnemo API: watermark embedding vectors and verify them later. Authenticates with an account API key; does not implement accountless agent namespaces or x402 payments.",
   "homepage": "https://www.trymnemo.com",
   "api_base": "https://api.trymnemo.com",
@@ -42,7 +42,7 @@
       "optional_params": ["subject_proof"],
       "returns": ["verified", "confidence", "vector_uid", "policy_ok", "signals"],
       "billing_event": true,
-      "note": "Counts against the account plan's included monthly verifications. The SDK sends no Idempotency-Key, so a verify retried after a lost response may be counted again. `subject_proof` is an opaque, UNTRUSTED carrier replayed verbatim; the server re-verifies it. It is consulted only on a STRICT oracle-only Case 3 verify under FP-squash — not on every verify."
+      "note": "Counts against the account plan's included monthly verifications. The SDK sends an Idempotency-Key on every verify() call (the caller's idempotency_key verbatim, or a uuid4 generated for that call) and reuses it on every internal retry, so a retried verify is not counted again. `subject_proof` is an opaque, UNTRUSTED carrier replayed verbatim; the server re-verifies it. It is consulted only on a STRICT oracle-only Case 3 verify under FP-squash — not on every verify."
     },
     {
       "name": "health",

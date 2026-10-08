@@ -9,7 +9,7 @@ from mnemo_sdk.errors import (
     MnemoException, MnemoAPIError, MnemoValidationError, MnemoErrorCode,
 )
 
-__version__ = "3.1.0"
+__version__ = "3.1.1"
 __all__ = [
     "MnemoClient", "MnemoConfig",
     "EmbedResult", "VerifyResult", "PolicyConfig", "PolicyBuilder", "create_policy",
