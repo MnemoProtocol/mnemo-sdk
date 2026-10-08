@@ -14,7 +14,7 @@ The primary client for interacting with the Mnemo watermarking API.
 MnemoClient(
     api_key: str,
     *,
-    api_url: str = "https://api.mnemo.ai",
+    api_url: str = "https://api.trymnemo.com",
     timeout: int = 30,
     retry_attempts: int = 3,
     config: Optional[MnemoConfig] = None,
@@ -25,10 +25,10 @@ MnemoClient(
 
 | Name             | Type                    | Default                   | Description                              |
 |------------------|-------------------------|---------------------------|------------------------------------------|
-| `api_key`        | `str`                   | (required)                | Your Mnemo API key.                      |
-| `api_url`        | `str`                   | `https://api.mnemo.ai`   | Base URL for the Mnemo API.              |
+| `api_key`        | `str`                   | (required)                | Your Mnemo account API key, sent as `X-API-Key`. |
+| `api_url`        | `str`                   | `https://api.trymnemo.com` | Base URL for the Mnemo API.            |
 | `timeout`        | `int`                   | `30`                      | Request timeout in seconds.              |
-| `retry_attempts` | `int`                   | `3`                       | Number of retry attempts on failure.     |
+| `retry_attempts` | `int`                   | `3`                       | Total attempts per call on `429`, connection errors and timeouts. |
 | `config`         | `Optional[MnemoConfig]` | `None`                    | Config object (overrides other params).  |
 
 ### Methods
@@ -39,7 +39,7 @@ Embed a watermark into a vector via `POST /v1/embed`.
 
 | Parameter       | Type                       | Description                                |
 |-----------------|----------------------------|--------------------------------------------|
-| `vector`        | `list[float]` or `ndarray` | The input vector.                          |
+| `vector`        | `list[float]` or `ndarray` | The input vector (512–4096 finite numbers). |
 | `model_id`      | `str`                      | Identifier for the source model.           |
 | `model_version` | `str`                      | Model version string (default `"1.0"`).    |
 | `policy`        | `Optional[dict]`           | Policy dict from `create_policy` or `PolicyBuilder`. |
@@ -47,28 +47,30 @@ Embed a watermark into a vector via `POST /v1/embed`.
 
 **Returns:** `EmbedResult` (with `subject_proof` set only when a subject was supplied and the server-side transport is enabled+configured).
 
-#### `verify(vector, *, subject_proof=None) -> VerifyResult`
+#### `verify(vector, *, subject_proof=None) -> Optional[VerifyResult]`
 
 Verify a vector for a Mnemo watermark via `POST /v1/verify`.
 
 | Parameter       | Type                        | Description                         |
 |-----------------|-----------------------------|-------------------------------------|
-| `vector`        | `list[float]` or `ndarray`  | The vector to verify.               |
+| `vector`        | `list[float]` or `ndarray`  | The vector to verify (512–4096 finite numbers). |
 | `subject_proof` | `Optional[SubjectProof \| dict]` | Optional **opaque, untrusted** carrier from a prior `embed`. The SDK transports it verbatim and never validates/verifies/interprets it — the **server** re-verifies it. It is consulted **only** on an oracle-only Case 3 verify under **STRICT** mode with FP-squash enabled (the provenance-grade, claim-bearing path); it does not run on every verify. |
 
-**Returns:** `VerifyResult` (with `signals` populated when the server returns the diagnostic block). BALANCED/HIGH_RECALL are non-claim-bearing for subject-proof / oracle-only recovery.
+**Returns:** `VerifyResult` when a watermark is detected (with `signals` populated when the server returns the diagnostic block), otherwise `None`. BALANCED/HIGH_RECALL are non-claim-bearing for subject-proof / oracle-only recovery.
+
+**Billing:** with an API key, each verification counts against the account plan's included monthly verifications (no automatic overage, no top-ups, never x402). When they are used up the server answers `402 {"code": "insufficient_credits"}` without `PAYMENT-REQUIRED`, raised as `MnemoAPIError` (`status_code=402`, `code=MnemoErrorCode.QUOTA_EXCEEDED`, `details={"code": "insufficient_credits"}`). No `Idempotency-Key` is sent, so an internal retry after a lost response may be counted again.
 
 #### `health() -> dict`
 
-Check the health of the Mnemo API via `GET /v1/health`.
+Check the health of the Mnemo API via `GET /v1/health` (no authentication required).
 
-**Returns:** Dictionary with service health information.
+**Returns:** Dictionary with `status`, `version` and `timestamp`.
 
 #### `usage() -> dict`
 
 Retrieve API usage statistics via `GET /v1/usage`.
 
-**Returns:** Dictionary with usage data for the authenticated account.
+**Returns:** Dictionary for the current calendar month: `embed_count`, `verify_count`, `period` (`YYYY-MM`), `tier`, `embed_limit`, `verify_limit`.
 
 ---
 
@@ -80,7 +82,7 @@ Configuration dataclass for `MnemoClient`.
 @dataclass
 class MnemoConfig:
     api_key: str
-    api_url: str = "https://api.mnemo.ai"
+    api_url: str = "https://api.trymnemo.com"
     timeout: int = 30
     retry_attempts: int = 3
 ```
@@ -88,7 +90,7 @@ class MnemoConfig:
 | Field            | Type  | Default                 | Description                          |
 |------------------|-------|-------------------------|--------------------------------------|
 | `api_key`        | `str` | (required)              | Your Mnemo API key.                  |
-| `api_url`        | `str` | `https://api.mnemo.ai`  | Base URL for the API.                |
+| `api_url`        | `str` | `https://api.trymnemo.com` | Base URL for the API.             |
 | `timeout`        | `int` | `30`                    | Request timeout in seconds.          |
 | `retry_attempts` | `int` | `3`                     | Number of retry attempts on failure. |
 
@@ -133,16 +135,16 @@ Dataclass returned from `MnemoClient.verify()`.
 class VerifyResult:
     verified: bool
     confidence: float
-    vector_uid: Optional[str] = None
-    policy_ok: bool = False
+    vector_uid: str
+    policy_ok: bool
     signals: Optional[VerifySignals] = None
 ```
 
 | Field        | Type            | Description                                      |
 |--------------|-----------------|--------------------------------------------------|
-| `verified`   | `bool`          | `True` if a watermark was detected.              |
+| `verified`   | `bool`          | Always `True` (a result is returned only on detection). |
 | `confidence` | `float`         | Confidence score between 0.0 and 1.0.            |
-| `vector_uid` | `Optional[str]` | The watermark UID, if detected.                  |
+| `vector_uid` | `str`           | The watermark UID.                               |
 | `policy_ok`  | `bool`          | Whether the watermark policy is still valid.     |
 | `signals`    | `Optional[VerifySignals]` | Optional diagnostic arbitration breakdown (method, statuses, oracle metrics, `mode`, latency). `None` if the server omits it. |
 
@@ -226,9 +228,9 @@ class PolicyConfig:
 | Field         | Type  | Default | Description                            |
 |---------------|-------|---------|----------------------------------------|
 | `ttl_hours`   | `int` | `720`   | Watermark time-to-live in hours.       |
-| `usage_class` | `str` | `"std"` | Usage classification tier.             |
-| `retention`   | `str` | `"hot"` | Retention tier (`"hot"`, `"warm"`, `"cold"`). |
-| `region`      | `str` | `"us"`  | Deployment region.                     |
+| `usage_class` | `str` | `"std"` | Usage class, passed through to the server. |
+| `retention`   | `str` | `"hot"` | Retention value, passed through to the server. |
+| `region`      | `str` | `"us"`  | Region value, passed through to the server. |
 
 ### Methods
 
@@ -259,9 +261,9 @@ Fluent builder for constructing policy configuration dictionaries.
 policy = (
     PolicyBuilder()
     .ttl_days(30)
-    .usage_class("premium")
+    .usage_class("std")
     .retention("cold")
-    .region("eu")
+    .region("us")
     .build()
 )
 ```
@@ -308,6 +310,8 @@ class MnemoException(Exception):
 ## MnemoAPIError
 
 Raised when the Mnemo API returns an HTTP error response. Subclass of `MnemoException`.
+
+`message` is the server's error text (`detail`, `detail.message`, or the bare `code`); `details` carries the structured part (the `detail` object/list, or `{"code": ...}` for billing refusals). Status mapping: `400`/`422` → `INVALID_INPUT`, `401`/`403` → `UNAUTHORIZED`, `402` → `QUOTA_EXCEEDED`, `404` → `NOT_FOUND`, `429` → `RATE_LIMIT`, anything else → `SERVER_ERROR`.
 
 ```python
 class MnemoAPIError(MnemoException):

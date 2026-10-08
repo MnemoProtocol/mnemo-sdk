@@ -16,6 +16,8 @@ Notes on behavior:
     compressed oracle-only recovery.
 """
 
+import random
+
 from mnemo_sdk import MnemoClient, Subject
 
 
@@ -25,7 +27,8 @@ def main() -> None:
     # 1) Embed with raw subject context. The server canonicalizes it and (when the
     #    subject-proof transport is enabled+configured) returns a proof carrier.
     result = client.embed(
-        vector=[0.1, 0.2, 0.3, 0.4, 0.5],
+        # Stand-in for a real embedding (512-4096 finite numbers).
+        vector=[random.uniform(-1.0, 1.0) for _ in range(768)],
         model_id="text-embedding-3-small",
         subject=Subject(
             subject_uri="mnemo://subj/your-tenant/document/doc-123",

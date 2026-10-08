@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -7,16 +7,33 @@ name = "mnemo-protocol"
 version = "3.1.0"
 description = "Python SDK for the Mnemo watermarking API"
 license = "LicenseRef-Proprietary"
+license-files = ["LICENSE", "TERMS.md"]
 readme = "README.md"
 requires-python = ">=3.9"
+authors = [{ name = "Mnemo LLC" }]
 dependencies = ["requests>=2.28"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 
 [project.optional-dependencies]
 numpy = ["numpy>=1.24"]
 dev = ["pytest>=7.4", "requests-mock>=1.11"]
 
 [project.urls]
+Homepage = "https://www.trymnemo.com"
+Documentation = "https://github.com/MnemoProtocol/mnemo-sdk/tree/main/docs"
 Repository = "https://github.com/MnemoProtocol/mnemo-sdk"
+Issues = "https://github.com/MnemoProtocol/mnemo-sdk/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mnemo_sdk"]
+
+[tool.hatch.build.targets.sdist]
+include = ["mnemo_sdk", "LICENSE", "TERMS.md", "README.md", "pyproject.toml"]

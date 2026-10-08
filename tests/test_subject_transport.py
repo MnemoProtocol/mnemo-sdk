@@ -68,7 +68,7 @@ SIGNALS = {
 }
 
 
-def _client(url="https://test.mnemo.ai", key="k"):
+def _client(url="https://mnemo.test", key="k"):
     return MnemoClient(api_key=key, api_url=url)
 
 

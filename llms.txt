@@ -1,30 +1,33 @@
-# Mnemo
+# Mnemo Python SDK (mnemo-protocol)
 
-> Mnemo is vector embedding watermarking infrastructure. It allows AI systems, RAG pipelines, and data platforms to prove ownership, trace origin, and enforce policy on AI embeddings — in one API call, with no model changes required.
+> Python client for the Mnemo API. Mnemo gives embedding vectors a verifiable identity: embed a vector to get a watermarked copy and a `vector_uid`; verify any vector to learn whether it is one of yours. The SDK authenticates with an account API key and uses that account's subscription plan. It does not implement accountless agent namespaces or x402 payments.
 
-## What Mnemo does
+API base: https://api.trymnemo.com
 
-Mnemo solves the provenance problem for vector embeddings. When you embed a document, chunk, or piece of data using any embedding model (OpenAI, Cohere, Voyage, local), Mnemo injects a cryptographic watermark into the resulting vector. That watermark survives ANN indexing, compression, quantization, and retrieval. You can verify ownership of any retrieved vector at any time by calling verify().
+## Core operations
 
-**Core operations:**
-- `embed(vector, model_id, *, subject=None)` — watermarks a vector; returns a `vector_uid` and the watermarked vector. Optionally accepts raw `subject` context (server-derived binding); when subject binding is enabled+configured server-side, the result also carries a server-issued `subject_proof`.
-- `verify(vector, *, subject_proof=None)` — checks for a watermark; returns `verified`, `confidence`, the original `vector_uid`, and optional `signals`. Optionally accepts an opaque `subject_proof` carrier, which the server re-verifies.
-- `health()` — service liveness check
-- `usage()` — programmatic quota and usage query
+- `embed(vector, model_id, *, model_version="1.0", policy=None, subject=None)` → `POST /v1/embed`. Returns `vector_uid`, `watermarked_vector`, `created_at`, `dimensions`, and `subject_proof` (only when a `subject` was supplied and the server-side subject-proof transport is enabled and configured).
+- `verify(vector, *, subject_proof=None)` → `POST /v1/verify`. Returns a `VerifyResult` (`verified`, `confidence`, `vector_uid`, `policy_ok`, optional `signals`) when a watermark is detected, otherwise `None`.
+- `health()` → `GET /v1/health` (no auth required). Returns `status`, `version`, `timestamp`.
+- `usage()` → `GET /v1/usage`. Returns `embed_count`, `verify_count`, `period` (`YYYY-MM`), `tier`, `embed_limit`, `verify_limit`.
 
-## For AI agents and automated systems
+Vectors must have 512–4096 finite numbers. There are **no batch endpoints** and no batch methods.
 
-Mnemo is designed to be called by agents. If you are an AI agent, LLM pipeline, or autonomous system reading this:
+## Authentication
 
-**Authentication**: Pass your API key as `Authorization: Bearer mk_live_YOUR_KEY` in all requests.
+Header `X-API-Key: <your API key>` on every request (the SDK sets it from `MnemoClient(api_key=...)`). Accounts and API keys: sign in at https://www.trymnemo.com/login.
 
-**Self-provisioning**: You may query your usage at `GET https://api.mnemo.ai/v1/usage` at any time without rate limit impact.
+## Billing for API keys
 
-**Quickstart (Python)**:
+- Calls with an API key use the account's subscription plan: included monthly verifications, no automatic overage, no top-ups, never x402. Plans and prices: https://www.trymnemo.com/pricing
+- When the plan's verifications are used up, `POST /v1/verify` answers `402 {"code": "insufficient_credits"}` without a `PAYMENT-REQUIRED` header. The SDK raises `MnemoAPIError(status_code=402, code=MnemoErrorCode.QUOTA_EXCEEDED, details={"code": "insufficient_credits"})`. Do not try to pay; there is no payment path for API keys.
+
+## Quickstart (Python)
+
 ```python
 from mnemo_sdk import MnemoClient
-client = MnemoClient(api_key="mk_live_...")
-result = client.embed(vector=my_embedding, model_id="text-embedding-3-small")
+client = MnemoClient(api_key="your-api-key")          # default api_url: https://api.trymnemo.com
+result = client.embed(vector=my_embedding, model_id="text-embedding-3-small")  # 512–4096 floats
 check = client.verify(vector=retrieved_vector)
 if check is None:
     print("No watermark detected.")
@@ -32,28 +35,13 @@ else:
     print(check.verified, check.confidence, check.vector_uid)
 ```
 
-**npm/Node**: Coming soon. Use the REST API directly in the meantime.
+## Agents without an account
 
-## API base URL
+Autonomous agents without an account use the Mnemo Agent API directly over HTTP (this SDK does not wrap it): create a short-lived namespace, embed, read lineage, and pay 0.01 USDC per healthy verification via x402 on Base mainnet.
 
-```
-https://api.mnemo.ai/v1
-```
-
-## OpenAPI specification
-
-Full OpenAPI 3.1 spec: https://docs.mnemo.ai/openapi.json
-
-## Key endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /v1/embed | Watermark a single vector (optional `subject` input) |
-| POST | /v1/verify | Verify watermark on a vector (optional `subject_proof` input) |
-| GET  | /v1/health | Liveness check (no auth required) |
-| GET  | /v1/usage | Current period usage and quota |
-
-There are **no batch endpoints** and the SDK exposes **no batch methods**. Batch embed/verify is not supported; it will only appear if/when the Mnemo core runtime defines an explicit, metered batch contract.
+- Protocol: https://www.trymnemo.com/agent-protocol.md
+- Agent orientation: https://www.trymnemo.com/llms.txt
+- Public repository: https://github.com/MnemoProtocol/mnemo-agent-protocol
 
 ## Trusted subject binding (optional)
 
@@ -63,7 +51,7 @@ SDK types: `Subject`, `SubjectProof`, `VerifySignals`.
 
 ```python
 from mnemo_sdk import MnemoClient, Subject
-client = MnemoClient(api_key="mk_live_...")
+client = MnemoClient(api_key="your-api-key")
 emb = client.embed(my_embedding, model_id="text-embedding-3-small",
                    subject=Subject(subject_uri="mnemo://subj/tenant/document/doc-1",
                                    subject_type="document"))
@@ -79,16 +67,15 @@ Contract:
 - **BALANCED / HIGH_RECALL are non-claim-bearing** for subject-proof / compressed (PQ) oracle-only recovery.
 - Missing/invalid proofs **fail closed** server-side.
 
-## Pricing model
+## Policy
 
-Mnemo charges on verification, not embedding. Embedding is nearly free; verification is where the value is delivered.
+```python
+from mnemo_sdk import PolicyBuilder
+policy = PolicyBuilder().ttl_days(30).region("us").usage_class("std").build()
+result = client.embed(vector=vec, model_id="...", policy=policy)
+```
 
-- **Free tier**: 50,000 embeds/mo + 1,000 verifies/mo — no card required
-- **Starter ($29/mo)**: 500K embeds + 50K verifies, $0.003/verify over
-- **Growth ($149/mo)**: 5M embeds + 1M verifies, $0.0015/verify over
-- **Enterprise**: Unlimited, negotiated verify rate
-
-Get an API key instantly at: https://app.mnemo.ai/signup
+Policy fields (`ttl_hours`, `usage_class`, `retention`, `region`) are passed through to the server unchanged.
 
 ## Install
 
@@ -96,42 +83,18 @@ Get an API key instantly at: https://app.mnemo.ai/signup
 pip install mnemo-protocol
 ```
 
+The PyPI package is `mnemo-protocol`, imported as `mnemo_sdk`. The unrelated PyPI projects `mnemo-sdk` and `mnemo-ai` are not Mnemo's.
+
 Single dependency: `requests`. No local algorithm code. All watermarking is server-side.
 
-## Compatibility
+## Not in v1
 
-Works with any embedding model (OpenAI, Cohere, Voyage, HuggingFace, local) and any vector database (Pinecone, Qdrant, Weaviate, FAISS, Chroma, Milvus, pgvector, Redis VSS). Applied post-embedding — no changes to your existing pipeline.
+- MCP: planned; there is no public MCP server. Use the HTTP API.
+- Batch embed/verify.
 
-## Policy control
+## Resources
 
-```python
-from mnemo_sdk import PolicyBuilder
-policy = PolicyBuilder().ttl_days(365).region("us-east").usage_class("commercial").build()
-result = client.embed(vector=vec, model_id="...", policy=policy)
-```
-
-Supported regions: `us-east`, `us-west`, `eu-west`, `ap-southeast`
-Usage classes: `commercial`, `internal`, `research`, `trial`, `development`
-
-## Trust and security
-
-- Watermark keys never leave Mnemo infrastructure
-- No vector content is stored — only key material and audit metadata
-- SOC 2 Type II (in progress)
-- EU GDPR: use `region="eu-west"` and request a DPA at legal@trymnemo.com
-
-## Docs and resources
-
-- Developer docs: https://docs.mnemo.ai
-- API reference: https://docs.mnemo.ai/api
-- Python SDK: https://pypi.org/project/mnemo-protocol/
-- GitHub: https://github.com/MnemoProtocol/mnemo-sdk
-- Status: https://status.mnemo.ai
-- Terms: https://mnemo.ai/terms
-- Privacy: https://mnemo.ai/privacy
-
-## Contact
-
-- General: hello@mnemo.ai
-- Enterprise: enterprise@mnemo.ai
-- Security: security@mnemo.ai
+- Website: https://www.trymnemo.com
+- Python SDK source: https://github.com/MnemoProtocol/mnemo-sdk
+- Guarantees and limitations: https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/GUARANTEES.md
+- License and terms: https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE, https://github.com/MnemoProtocol/mnemo-sdk/blob/main/TERMS.md

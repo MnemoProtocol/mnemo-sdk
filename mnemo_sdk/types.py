@@ -3,13 +3,16 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+# Public Mnemo API host.
+DEFAULT_API_URL = "https://api.trymnemo.com"
+
 
 @dataclass
 class MnemoConfig:
     """Configuration for the Mnemo API client."""
 
     api_key: str
-    api_url: str = "https://api.mnemo.ai"
+    api_url: str = DEFAULT_API_URL
     timeout: int = 30
     retry_attempts: int = 3
 

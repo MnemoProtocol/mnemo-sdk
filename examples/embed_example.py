@@ -4,21 +4,29 @@ Shows how to embed watermarks with custom policies using both
 the convenience function and the fluent PolicyBuilder API.
 """
 
+import random
+
 from mnemo_sdk import MnemoClient, PolicyBuilder, create_policy
 
 client = MnemoClient(api_key="your-api-key")
+
+
+def sample_vector(dims: int = 768):
+    """Stand-in for a real embedding. Vectors must have 512-4096 finite numbers."""
+    return [random.uniform(-1.0, 1.0) for _ in range(dims)]
+
 
 # --- Option 1: create_policy convenience function ---
 
 policy = create_policy(
     ttl_hours=168,        # 7-day watermark lifetime
-    usage_class="premium",
+    usage_class="std",
     retention="hot",
     region="us",
 )
 
 result = client.embed(
-    vector=[0.1, 0.2, 0.3, 0.4, 0.5],
+    vector=sample_vector(),
     model_id="text-embedding-3-small",
     model_version="1.0",
     policy=policy,
@@ -33,12 +41,12 @@ policy_v2 = (
     .ttl_days(30)
     .usage_class("internal")
     .retention("cold")
-    .region("eu")
+    .region("us")
     .build()
 )
 
 result_v2 = client.embed(
-    vector=[0.5, 0.4, 0.3, 0.2, 0.1],
+    vector=sample_vector(),
     model_id="text-embedding-ada-002",
     policy=policy_v2,
 )

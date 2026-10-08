@@ -6,7 +6,7 @@ import pytest
 @pytest.fixture
 def mock_api_url():
     """Base URL used by tests to avoid hitting a real server."""
-    return "https://test.mnemo.ai"
+    return "https://mnemo.test"
 
 
 @pytest.fixture

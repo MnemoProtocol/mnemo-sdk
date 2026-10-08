@@ -4,7 +4,7 @@ This guide shows how to use the Mnemo SDK to embed and verify watermarks via the
 
 ## Prerequisites
 
-- A Mnemo API key (sign up at https://app.mnemo.ai)
+- A Mnemo account API key (sign in at https://www.trymnemo.com/login)
 - Python 3.9+
 
 ## Installation
@@ -21,19 +21,23 @@ from mnemo_sdk import MnemoClient
 client = MnemoClient(api_key="your-api-key")
 ```
 
-The client sends all requests to `https://api.mnemo.ai` by default. To use a different endpoint:
+The client sends all requests to `https://api.trymnemo.com` by default, with your key in the `X-API-Key` header. To use a different endpoint:
 
 ```python
-client = MnemoClient(api_key="your-api-key", api_url="https://custom.endpoint.ai")
+client = MnemoClient(api_key="your-api-key", api_url="https://custom.endpoint.example")
 ```
 
 ## Step 2: Embed a Watermark
 
-Send a `POST /v1/embed` request to embed an invisible watermark into a vector:
+Send a `POST /v1/embed` request to embed an invisible watermark into a vector. Vectors must have 512–4096 finite numbers:
 
 ```python
+import random
+
+vector = [random.uniform(-1.0, 1.0) for _ in range(768)]  # stand-in for a real embedding
+
 result = client.embed(
-    vector=[0.1, 0.2, 0.3, 0.4, 0.5],
+    vector=vector,
     model_id="text-embedding-3-small",
 )
 
@@ -52,11 +56,16 @@ Send a `POST /v1/verify` request to check whether a vector contains a Mnemo wate
 ```python
 check = client.verify(vector=result.watermarked_vector)
 
-print(check.verified)    # True if a watermark was detected
-print(check.confidence)  # Confidence score (0.0 to 1.0)
-print(check.vector_uid)  # The watermark UID, if detected
-print(check.policy_ok)   # Whether the watermark policy is still valid
+if check is None:
+    print("No watermark detected.")
+else:
+    print(check.verified)    # Always True when a result is returned
+    print(check.confidence)  # Confidence score (0.0 to 1.0)
+    print(check.vector_uid)  # The watermark UID
+    print(check.policy_ok)   # Whether the watermark policy is still valid
 ```
+
+`verify()` returns `None` when no watermark is detected.
 
 ## Step 4: Check Service Health
 
@@ -64,17 +73,33 @@ Send a `GET /v1/health` request:
 
 ```python
 health = client.health()
-print(health)  # {"status": "ok", "version": "..."}
+print(health)  # {"status": "ok", "version": "...", "timestamp": "..."}
 ```
 
 ## Step 5: Check Usage
 
-Send a `GET /v1/usage` request to see your current usage statistics:
+Send a `GET /v1/usage` request to see the current month's usage and your plan's limits:
 
 ```python
 usage = client.usage()
-print(usage)  # {"embeds": ..., "verifications": ..., "quota_remaining": ...}
+print(usage)
+# {"embed_count": ..., "verify_count": ..., "period": "YYYY-MM", "tier": "...",
+#  "embed_limit": ..., "verify_limit": ...}
 ```
+
+## API Keys and Billing
+
+Calls made with an API key use the account's subscription plan: included monthly
+verifications, no automatic overage, no top-ups, and never x402. Plans and prices:
+https://www.trymnemo.com/pricing.
+
+When the plan's verifications are used up, `POST /v1/verify` answers
+`402 {"code": "insufficient_credits"}` with no `PAYMENT-REQUIRED` header, and the SDK
+raises `MnemoAPIError` with `code == MnemoErrorCode.QUOTA_EXCEEDED`.
+
+Agents without an account do not use this SDK: they use the Mnemo Agent API
+directly (0.01 USDC per healthy verification via x402 on Base mainnet). See
+https://github.com/MnemoProtocol/mnemo-agent-protocol.
 
 ## Using Policies
 
@@ -84,14 +109,14 @@ Policies let you control watermark behavior such as lifetime and region:
 from mnemo_sdk import create_policy
 
 policy = create_policy(
-    ttl_hours=168,          # Watermark valid for 7 days
-    usage_class="premium",
+    ttl_hours=168,          # 7 days
+    usage_class="std",
     retention="hot",
-    region="eu",
+    region="us",
 )
 
 result = client.embed(
-    vector=[0.1, 0.2, 0.3],
+    vector=vector,
     model_id="text-embedding-3-small",
     policy=policy,
 )
@@ -107,12 +132,14 @@ from mnemo_sdk.errors import MnemoAPIError, MnemoValidationError
 try:
     result = client.embed(vector=[0.1], model_id="model-id")
 except MnemoAPIError as e:
+    # e.code is a MnemoErrorCode, e.g. INVALID_INPUT for 400/422,
+    # QUOTA_EXCEEDED for 402 insufficient_credits.
     print(f"HTTP {e.status_code}: {e.message} (code: {e.code})")
 except MnemoValidationError as e:
     print(f"Input error: {e.message}")
 ```
 
-The client automatically retries on HTTP 429 (rate limit) responses, using the `Retry-After` header when available.
+The client automatically retries on HTTP 429 (rate limit) responses, using the `Retry-After` header when available, and on connection errors and timeouts. `verify()` sends no `Idempotency-Key`, so a verify retried after a lost response may be counted again against your plan; use `retry_attempts=1` if you need at most one attempt per call.
 
 ## HTTP Endpoints Summary
 
@@ -120,5 +147,7 @@ The client automatically retries on HTTP 429 (rate limit) responses, using the `
 |--------|--------------------|--------------------------------|
 | POST   | `/v1/embed`        | Embed a watermark              |
 | POST   | `/v1/verify`       | Verify a vector                |
-| GET    | `/v1/health`       | Service health check           |
+| GET    | `/v1/health`       | Service health check (no auth) |
 | GET    | `/v1/usage`        | Account usage statistics       |
+
+All authenticated requests use the `X-API-Key` header.

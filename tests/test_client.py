@@ -51,9 +51,17 @@ VERIFY_NOT_FOUND_RESPONSE = {
     "policy_ok": False,
 }
 
-HEALTH_RESPONSE = {"status": "ok", "version": "3.0.0"}
+HEALTH_RESPONSE = {"status": "ok", "version": "2.0.0", "timestamp": "2026-01-01T00:00:00+00:00"}
 
-USAGE_RESPONSE = {"embeds": 100, "verifications": 50, "quota_remaining": 9900}
+# Mirrors MnemoV2 `GET /v1/usage`.
+USAGE_RESPONSE = {
+    "embed_count": 100,
+    "verify_count": 50,
+    "period": "2026-01",
+    "tier": "free",
+    "embed_limit": 50000,
+    "verify_limit": 1000,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -146,7 +154,8 @@ class TestMnemoClient:
         session_instance.get.assert_called_once()
         call_args = session_instance.get.call_args
         assert call_args[0][0] == f"{mock_api_url}/v1/usage"
-        assert result["embeds"] == 100
+        assert result["embed_count"] == 100
+        assert result["verify_limit"] == 1000
 
     @patch("mnemo_sdk.client.requests.Session")
     def test_api_key_header(self, MockSession, mock_api_url, mock_api_key):

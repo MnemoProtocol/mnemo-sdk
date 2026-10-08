@@ -7,6 +7,7 @@ import requests
 
 from mnemo_sdk.errors import MnemoAPIError, MnemoErrorCode, MnemoValidationError
 from mnemo_sdk.types import (
+    DEFAULT_API_URL,
     EmbedResult,
     MnemoConfig,
     PolicyConfig,
@@ -70,7 +71,7 @@ class MnemoClient:
         self,
         api_key: str,
         *,
-        api_url: str = "https://api.mnemo.ai",
+        api_url: str = DEFAULT_API_URL,
         timeout: int = 30,
         retry_attempts: int = 3,
         config: Optional[MnemoConfig] = None,
@@ -200,18 +201,20 @@ class MnemoClient:
         )
 
     def health(self) -> Dict[str, Any]:
-        """Check the health of the Mnemo API.
+        """Check the health of the Mnemo API (``GET /v1/health``, no auth required).
 
         Returns:
-            Dictionary with service health information.
+            Dictionary with ``status``, ``version`` and ``timestamp``.
         """
         return self._get_with_retry("/v1/health")
 
     def usage(self) -> Dict[str, Any]:
-        """Retrieve current API usage statistics.
+        """Retrieve current API usage statistics (``GET /v1/usage``).
 
         Returns:
-            Dictionary with usage data for the authenticated account.
+            Dictionary for the current calendar month: ``embed_count``,
+            ``verify_count``, ``period`` (``YYYY-MM``), ``tier``, ``embed_limit``
+            and ``verify_limit``.
         """
         return self._get_with_retry("/v1/usage")
 
@@ -339,20 +342,54 @@ def _serialize_vector(vector) -> List[float]:
 
 
 def _raise_api_error(resp: requests.Response) -> None:
-    """Parse an error response and raise MnemoAPIError."""
+    """Parse an error response and raise MnemoAPIError.
+
+    The API answers errors in three shapes:
+
+    * ``{"code": "<code>"}`` — billing refusals, e.g. an API key whose plan has
+      no verifications left gets ``402 {"code": "insufficient_credits"}``;
+    * ``{"detail": "<message>"}`` or ``{"detail": {"code": ..., "message": ...}}``
+      — ordinary request errors;
+    * ``{"detail": [ ... ]}`` — request validation errors (422).
+
+    ``message`` is the most specific human-readable text available; ``details``
+    carries the structured part (the ``detail`` object/list, or ``{"code": ...}``).
+    """
+    message = resp.text
+    details = None
     try:
         body = resp.json()
-        message = body.get("error", body.get("message", resp.text))
-        details = body.get("details")
     except (json.JSONDecodeError, ValueError):
-        message = resp.text
-        details = None
+        body = None
+
+    if isinstance(body, dict):
+        detail = body.get("detail")
+        code = body.get("code")
+        if "error" in body or "message" in body:
+            message = body.get("error", body.get("message"))
+        elif isinstance(detail, str):
+            message = detail
+        elif isinstance(detail, dict):
+            message = detail.get("message") or detail.get("code") or resp.text
+        elif isinstance(code, str):
+            message = code
+
+        if body.get("details") is not None:
+            details = body["details"]
+        elif isinstance(detail, (dict, list)):
+            details = detail
+        elif code is not None:
+            details = {"code": code}
 
     code_map = {
         400: MnemoErrorCode.INVALID_INPUT,
         401: MnemoErrorCode.UNAUTHORIZED,
+        # insufficient_credits: raised immediately, never retried. API keys are
+        # never offered x402 and the SDK has no payment path.
+        402: MnemoErrorCode.QUOTA_EXCEEDED,
         403: MnemoErrorCode.UNAUTHORIZED,
         404: MnemoErrorCode.NOT_FOUND,
+        422: MnemoErrorCode.INVALID_INPUT,
         429: MnemoErrorCode.RATE_LIMIT,
     }
     error_code = code_map.get(resp.status_code, MnemoErrorCode.SERVER_ERROR)

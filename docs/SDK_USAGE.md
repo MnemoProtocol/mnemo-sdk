@@ -7,10 +7,11 @@
 Embeds an invisible watermark into a vector and returns a tracked result.
 
 **Parameters:**
-- `vector` — list of floats (your embedding)
+- `vector` — list of floats (your embedding; 512–4096 finite numbers)
 - `model_id` — string identifying the embedding model
 - `model_version` — optional version string (default `"1.0"`)
-- `policy` — optional `PolicyConfig` for access control
+- `policy` — optional policy dict (from `create_policy()` or `PolicyBuilder().build()`)
+- `subject` — optional trusted-subject context (see below)
 
 **Returns:** `EmbedResult`
 
@@ -26,6 +27,7 @@ result = client.embed([0.1, -0.3, 0.5, ...], model_id="text-embedding-3-small")
 | `watermarked_vector` | `list[float]` | The watermarked vector (same dimensions) |
 | `created_at` | `str` | ISO timestamp of when the watermark was created |
 | `dimensions` | `int` | Number of dimensions |
+| `subject_proof` | `SubjectProof \| None` | Server-issued carrier, only when a `subject` was supplied and the server transport is enabled |
 
 ---
 
@@ -34,7 +36,8 @@ result = client.embed([0.1, -0.3, 0.5, ...], model_id="text-embedding-3-small")
 Attempts to identify a watermarked vector.
 
 **Parameters:**
-- `vector` — list of floats to verify
+- `vector` — list of floats to verify (512–4096 finite numbers)
+- `subject_proof` — optional carrier from a prior `embed()` (see below)
 
 **Returns:** `VerifyResult` if identified, `None` if not.
 
@@ -90,23 +93,31 @@ check = client.verify(emb.watermarked_vector, subject_proof=emb.subject_proof)
 
 ### `client.health()`
 
-Returns server health status.
+Calls `GET /v1/health` (no authentication required). Returns `status`, `version`
+and `timestamp`.
 
 ### `client.usage()`
 
-Returns usage statistics for your API key.
+Calls `GET /v1/usage`. Returns the current month's counters and the account tier's
+limits: `embed_count`, `verify_count`, `period` (`YYYY-MM`), `tier`, `embed_limit`,
+`verify_limit`.
 
 ---
 
 ## Error Handling
 
 ```python
-from mnemo_sdk import MnemoAPIError, MnemoValidationError
+from mnemo_sdk import MnemoAPIError, MnemoErrorCode, MnemoValidationError
 
 try:
-    result = client.embed(vector, model_id="test")
+    result = client.verify(vector)
 except MnemoAPIError as e:
-    print(f"Server error: {e.status_code} — {e}")
+    if e.code is MnemoErrorCode.QUOTA_EXCEEDED:
+        # 402 {"code": "insufficient_credits"}: the plan's included verifications
+        # are used up. API keys have no overage, no top-ups and never x402.
+        print("Verification allowance exhausted")
+    else:
+        print(f"Server error: {e.status_code} — {e}")
 except MnemoValidationError as e:
     print(f"Invalid input: {e}")
 ```
