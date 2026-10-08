@@ -2,6 +2,7 @@
 
 import json
 import time
+import uuid
 from typing import Any, Dict, List, Optional
 import requests
 
@@ -17,7 +18,7 @@ from mnemo_sdk.types import (
     VerifySignals,
 )
 
-_SDK_VERSION = "3.1.0"
+_SDK_VERSION = "3.1.1"
 _USER_AGENT = f"mnemo-protocol/{_SDK_VERSION} python"
 
 # Server-derived / trust fields the client may NEVER supply on a subject. The
@@ -58,6 +59,20 @@ def _serialize_subject_proof(subject_proof) -> Dict[str, Any]:
     if isinstance(subject_proof, dict):
         return subject_proof
     raise MnemoValidationError("subject_proof must be a SubjectProof or a dict")
+
+
+def _resolve_idempotency_key(idempotency_key) -> str:
+    """Return the ``Idempotency-Key`` for ONE ``verify()`` call.
+
+    A caller-supplied key is used verbatim. When the caller passes none, a fresh
+    uuid4 is generated. The value is resolved once per call, before the first
+    attempt, so every internal retry of that call carries the same key and the
+    server can recognise a retry instead of charging for it again."""
+    if idempotency_key is None:
+        return str(uuid.uuid4())
+    if not isinstance(idempotency_key, str) or not idempotency_key.strip():
+        raise MnemoValidationError("idempotency_key must be a non-empty string")
+    return idempotency_key
 
 
 class MnemoClient:
@@ -156,11 +171,24 @@ class MnemoClient:
         vector,
         *,
         subject_proof=None,
+        idempotency_key: Optional[str] = None,
     ) -> Optional[VerifyResult]:
         """Verify whether a vector contains a Mnemo watermark.
 
+        Every call sends an ``Idempotency-Key`` header. The same value is sent on
+        each internal retry of the call (rate limit, connection error, timeout),
+        so the server can recognise a retry after a lost response and answer it
+        from the stored result instead of charging for it a second time. If the
+        first attempt is still being processed when a retry arrives, the server
+        answers 409 (``request_in_progress``), raised as ``MnemoAPIError``.
+
         Args:
             vector: Vector to verify (list or numpy array).
+            idempotency_key: Optional key to send as ``Idempotency-Key``. Pass
+                your own to make a retry that YOU issue (a second ``verify()``
+                call for the same request) idempotent as well. When omitted, the
+                SDK generates a uuid4 for this call only; two separate calls
+                never share a generated key.
             subject_proof: Optional server-issued carrier (``SubjectProof`` or dict)
                 obtained from a prior ``embed``. It is an **opaque, untrusted**
                 artifact: the SDK passes it through verbatim and never validates,
@@ -178,7 +206,10 @@ class MnemoClient:
         if subject_proof is not None:
             payload["subject_proof"] = _serialize_subject_proof(subject_proof)
 
-        data = self._post_with_retry("/v1/verify", payload)
+        # Resolved ONCE per call, outside the retry loop.
+        headers = {"Idempotency-Key": _resolve_idempotency_key(idempotency_key)}
+
+        data = self._post_with_retry("/v1/verify", payload, headers=headers)
 
         if not data.get("verified"):
             return None
@@ -222,13 +253,23 @@ class MnemoClient:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _post_with_retry(self, endpoint: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _post_with_retry(
+        self,
+        endpoint: str,
+        payload: Dict[str, Any],
+        *,
+        headers: Optional[Dict[str, str]] = None,
+    ) -> Dict[str, Any]:
+        """``headers``: per-request headers, sent unchanged on every attempt."""
         url = f"{self._api_url}{endpoint}"
         last_exc: Optional[Exception] = None
+        request_kwargs: Dict[str, Any] = {"json": payload, "timeout": self._timeout}
+        if headers:
+            request_kwargs["headers"] = dict(headers)
 
         for attempt in range(self._retry_attempts):
             try:
-                resp = self._session.post(url, json=payload, timeout=self._timeout)
+                resp = self._session.post(url, **request_kwargs)
 
                 if resp.status_code == 429:
                     retry_after = float(resp.headers.get("Retry-After", 2 ** attempt))
