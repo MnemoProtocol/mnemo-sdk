@@ -186,10 +186,7 @@ except MnemoValidationError as e:
 ## Retries
 
 The client retries `429` responses (waiting `Retry-After` when present) and
-connection errors or timeouts, up to `retry_attempts` times. `verify()` does not
-send an `Idempotency-Key`, so a verify retried after a lost response may be
-counted again against the plan; pass `retry_attempts=1` if you need at most one
-attempt per call.
+connection errors or timeouts, up to `retry_attempts` times. `verify()` sends an `Idempotency-Key` header: your `idempotency_key` verbatim, or a uuid4 generated for that call. The same value is sent on every internal retry of the call, so a verify retried after a lost response is answered from the stored result instead of being counted again. Pass your own `idempotency_key` to make a retry that you issue (a second `verify()` call for the same request) idempotent too. If the first attempt is still in flight when a retry arrives, the server answers `409 request_in_progress` (raised as `MnemoAPIError`); retry later with the same key.
 
 ## API Reference
 

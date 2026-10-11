@@ -47,18 +47,19 @@ Embed a watermark into a vector via `POST /v1/embed`.
 
 **Returns:** `EmbedResult` (with `subject_proof` set only when a subject was supplied and the server-side transport is enabled+configured).
 
-#### `verify(vector, *, subject_proof=None) -> Optional[VerifyResult]`
+#### `verify(vector, *, subject_proof=None, idempotency_key=None) -> Optional[VerifyResult]`
 
 Verify a vector for a Mnemo watermark via `POST /v1/verify`.
 
 | Parameter       | Type                        | Description                         |
 |-----------------|-----------------------------|-------------------------------------|
 | `vector`        | `list[float]` or `ndarray`  | The vector to verify (512–4096 finite numbers). |
+| `idempotency_key` | `Optional[str]` | Sent as the `Idempotency-Key` header. When omitted, the SDK generates a uuid4 for this call. Either way the value is resolved once per call and sent unchanged on every internal retry of that call. An empty or non-string key raises `MnemoValidationError` before any request. |
 | `subject_proof` | `Optional[SubjectProof \| dict]` | Optional **opaque, untrusted** carrier from a prior `embed`. The SDK transports it verbatim and never validates/verifies/interprets it — the **server** re-verifies it. It is consulted **only** on an oracle-only Case 3 verify under **STRICT** mode with FP-squash enabled (the provenance-grade, claim-bearing path); it does not run on every verify. |
 
 **Returns:** `VerifyResult` when a watermark is detected (with `signals` populated when the server returns the diagnostic block), otherwise `None`. BALANCED/HIGH_RECALL are non-claim-bearing for subject-proof / oracle-only recovery.
 
-**Billing:** with an API key, each verification counts against the account plan's included monthly verifications (no automatic overage, no top-ups, never x402). When they are used up the server answers `402 {"code": "insufficient_credits"}` without `PAYMENT-REQUIRED`, raised as `MnemoAPIError` (`status_code=402`, `code=MnemoErrorCode.QUOTA_EXCEEDED`, `details={"code": "insufficient_credits"}`). No `Idempotency-Key` is sent, so an internal retry after a lost response may be counted again.
+**Billing:** with an API key, each verification counts against the account plan's included monthly verifications (no automatic overage, no top-ups, never x402). When they are used up the server answers `402 {"code": "insufficient_credits"}` without `PAYMENT-REQUIRED`, raised as `MnemoAPIError` (`status_code=402`, `code=MnemoErrorCode.QUOTA_EXCEEDED`, `details={"code": "insufficient_credits"}`). The `Idempotency-Key` sent on every attempt of a call means an internal retry after a lost response is not counted again.
 
 #### `health() -> dict`
 

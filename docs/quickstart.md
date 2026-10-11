@@ -139,7 +139,7 @@ except MnemoValidationError as e:
     print(f"Input error: {e.message}")
 ```
 
-The client automatically retries on HTTP 429 (rate limit) responses, using the `Retry-After` header when available, and on connection errors and timeouts. `verify()` sends no `Idempotency-Key`, so a verify retried after a lost response may be counted again against your plan; use `retry_attempts=1` if you need at most one attempt per call.
+The client automatically retries on HTTP 429 (rate limit) responses, using the `Retry-After` header when available, and on connection errors and timeouts. `verify()` sends an `Idempotency-Key` header: your `idempotency_key` verbatim, or a uuid4 generated for that call. The same value is sent on every internal retry of the call, so a verify retried after a lost response is answered from the stored result instead of being counted again. Pass your own `idempotency_key` to make a retry that you issue (a second `verify()` call for the same request) idempotent too. If the first attempt is still in flight when a retry arrives, the server answers `409 request_in_progress` (raised as `MnemoAPIError`); retry later with the same key.
 
 ## HTTP Endpoints Summary
 
