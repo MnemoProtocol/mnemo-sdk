@@ -43,7 +43,7 @@ Embed a watermark into a vector via `POST /v1/embed`.
 | `model_id`      | `str`                      | Identifier for the source model.           |
 | `model_version` | `str`                      | Model version string (default `"1.0"`).    |
 | `policy`        | `Optional[dict]`           | Policy dict from `create_policy` or `PolicyBuilder`. |
-| `subject`       | `Optional[Subject \| dict]` | Optional **raw** subject context. The server canonicalizes it into a tenant-scoped `subject_fingerprint` and (when enabled+configured) returns a server-issued `subject_proof`. The SDK passes it through unchanged and **rejects** any client-supplied `subject_fingerprint` / `trust_mode` / `proof*` field — trust is derived server-side. |
+| `subject`       | `Optional[Subject \| dict]` | Optional subject context. The Mnemo service processes it and (when the feature is enabled) returns a `subject_proof`. The SDK passes it through unchanged and **rejects** any client-supplied service-set field (`subject_fingerprint` / `trust_mode` / `proof*`). |
 
 **Returns:** `EmbedResult` (with `subject_proof` set only when a subject was supplied and the server-side transport is enabled+configured).
 
@@ -55,9 +55,9 @@ Verify a vector for a Mnemo watermark via `POST /v1/verify`.
 |-----------------|-----------------------------|-------------------------------------|
 | `vector`        | `list[float]` or `ndarray`  | The vector to verify (512–4096 finite numbers). |
 | `idempotency_key` | `Optional[str]` | Sent as the `Idempotency-Key` header. When omitted, the SDK generates a uuid4 for this call. Either way the value is resolved once per call and sent unchanged on every internal retry of that call. An empty or non-string key raises `MnemoValidationError` before any request. |
-| `subject_proof` | `Optional[SubjectProof \| dict]` | Optional **opaque, untrusted** carrier from a prior `embed`. The SDK transports it verbatim and never validates/verifies/interprets it — the **server** re-verifies it. It is consulted **only** on an oracle-only Case 3 verify under **STRICT** mode with FP-squash enabled (the provenance-grade, claim-bearing path); it does not run on every verify. |
+| `subject_proof` | `Optional[SubjectProof \| dict]` | Optional **opaque** proof token from a prior `embed`, issued and checked by the service. The SDK transports it verbatim and never validates or interprets it. The service decides when it is used. |
 
-**Returns:** `VerifyResult` when a watermark is detected (with `signals` populated when the server returns the diagnostic block), otherwise `None`. BALANCED/HIGH_RECALL are non-claim-bearing for subject-proof / oracle-only recovery.
+**Returns:** `VerifyResult` when a watermark is detected (with `signals` populated when the server returns the diagnostic block), otherwise `None`.
 
 **Billing:** with an API key, each verification counts against the account plan's included monthly verifications (no automatic overage, no top-ups, never x402). When they are used up the server answers `402 {"code": "insufficient_credits"}` without `PAYMENT-REQUIRED`, raised as `MnemoAPIError` (`status_code=402`, `code=MnemoErrorCode.QUOTA_EXCEEDED`, `details={"code": "insufficient_credits"}`). The `Idempotency-Key` sent on every attempt of a call means an internal retry after a lost response is not counted again.
 
@@ -147,13 +147,13 @@ class VerifyResult:
 | `confidence` | `float`         | Confidence score between 0.0 and 1.0.            |
 | `vector_uid` | `str`           | The watermark UID.                               |
 | `policy_ok`  | `bool`          | Whether the watermark policy is still valid.     |
-| `signals`    | `Optional[VerifySignals]` | Optional diagnostic arbitration breakdown (method, statuses, oracle metrics, `mode`, latency). `None` if the server omits it. |
+| `signals`    | `Optional[VerifySignals]` | Optional diagnostic signals returned by the service; values are informational and may change. `None` if the server omits it. |
 
 ---
 
 ## Subject
 
-Optional **raw** subject context for `embed()`. Mirrors the runtime `V1SubjectRequest`. The SDK passes it through unchanged; the **server** derives the tenant-scoped `subject_fingerprint`. By construction this model has no `subject_fingerprint` / `trust_mode` / `proof*` fields — the client cannot supply trust.
+Optional subject context for `embed()`. The SDK passes it through unchanged; the Mnemo service processes it. By construction this model has no `subject_fingerprint` / `trust_mode` / `proof*` fields — those are set by the service.
 
 ```python
 @dataclass
@@ -165,16 +165,16 @@ class Subject:
     parent_id: Optional[str] = None
     segment_id: Optional[str] = None
     offset: Optional[dict] = None
-    adapters: Optional[dict] = None  # opaque; never read by the server for trust
+    adapters: Optional[dict] = None  # opaque metadata, stored verbatim
 ```
 
-`to_dict()` serializes to the wire shape, dropping `None`-valued optionals. A plain `dict` may be passed to `embed(subject=...)` instead of a `Subject`; a dict containing any server-derived trust field is rejected with `MnemoValidationError`.
+`to_dict()` serializes to the wire shape, dropping `None`-valued optionals. A plain `dict` may be passed to `embed(subject=...)` instead of a `Subject`; a dict containing any service-set field is rejected with `MnemoValidationError`.
 
 ---
 
 ## SubjectProof
 
-Server-issued, **opaque and untrusted** carrier returned by `embed()` and replayed on `verify()`. Mirrors the runtime `V1SubjectProofResponse`. The SDK never validates, verifies, or interprets it — the **server** re-verifies it (a tenant-scoped, UID-bound HMAC) and only honors it on a STRICT oracle-only Case 3 verify under FP-squash. The original server payload is preserved verbatim so it round-trips byte-for-byte.
+An opaque proof token issued and checked by the service, returned by `embed()` and passed back on `verify()`. The SDK never validates or interprets it; only the service can check it. It may be absent if the feature is not enabled. The original server payload is preserved verbatim so it round-trips byte-for-byte.
 
 ```python
 @dataclass
@@ -196,7 +196,7 @@ class SubjectProof:
 
 ## VerifySignals
 
-Diagnostic arbitration breakdown carried on `VerifyResult.signals`. Mirrors the runtime `V1VerifySignals`. `mode` is the effective decision mode (`STRICT` | `BALANCED` | `HIGH_RECALL`); only **STRICT** is the provenance-grade / claim-bearing posture for subject-proof / compressed oracle-only recovery.
+Diagnostic signals returned by the service, carried on `VerifyResult.signals`; values are informational and may change. Field names are kept for compatibility; do not build trust decisions on them.
 
 ```python
 @dataclass

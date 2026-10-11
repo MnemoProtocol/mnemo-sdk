@@ -21,9 +21,8 @@ from mnemo_sdk.types import (
 _SDK_VERSION = "3.1.1"
 _USER_AGENT = f"mnemo-protocol/{_SDK_VERSION} python"
 
-# Server-derived / trust fields the client may NEVER supply on a subject. The
-# server derives the fingerprint and mints all proof/trust fields; a raw subject
-# carrying any of these is rejected client-side (the runtime would also reject it
+# Service-set fields the client may NEVER supply on a subject; a subject carrying
+# any of these is rejected client-side (the runtime would also reject it
 # via extra="forbid", but we fail fast with a clear SDK error).
 _FORBIDDEN_SUBJECT_KEYS = frozenset(
     {"subject_fingerprint", "trust_mode", "proof", "proof_type", "proof_digest", "proof_key_id"}
@@ -33,10 +32,8 @@ _FORBIDDEN_SUBJECT_KEYS = frozenset(
 def _serialize_subject(subject) -> Dict[str, Any]:
     """Normalize a ``subject`` arg (Subject or dict) to the wire shape.
 
-    The SDK is transport-only: it passes raw subject context through unchanged. It
-    does NOT compute ``subject_fingerprint`` or any trust/proof field, and it
-    rejects a dict that tries to supply one (the server is the sole deriver of
-    trust)."""
+    The SDK is transport-only: it passes subject context through unchanged and
+    rejects a dict that tries to supply a service-set field."""
     if isinstance(subject, Subject):
         return subject.to_dict()
     if isinstance(subject, dict):
@@ -44,7 +41,7 @@ def _serialize_subject(subject) -> Dict[str, Any]:
         if bad:
             raise MnemoValidationError(
                 "subject must not include server-derived fields "
-                f"{sorted(bad)} — the server derives the fingerprint and mints the proof"
+                f"{sorted(bad)} — these fields are set by the service"
             )
         return dict(subject)
     raise MnemoValidationError("subject must be a Subject or a dict")
@@ -132,14 +129,11 @@ class MnemoClient:
             model_id: Identifier for the model that produced the vector.
             model_version: Version of the model.
             policy: Optional policy dict (use ``create_policy`` or ``PolicyBuilder``).
-            subject: Optional trusted-subject context (``Subject`` or dict) — RAW
-                client context only. The **server** canonicalizes it into a
-                tenant-scoped ``subject_fingerprint`` and (when enabled+configured)
-                returns a server-issued ``subject_proof`` carrier on the result.
-                The SDK never derives the fingerprint or any trust/proof field and
-                rejects a dict that tries to supply one. Sending ``subject`` does
-                not by itself change verification — the proof only matters later, on
-                a STRICT oracle-only Case 3 verify under FP-squash.
+            subject: Optional subject context (``Subject`` or dict) — client
+                context only. The Mnemo service processes it and (when the feature
+                is enabled) returns an opaque ``subject_proof`` token on the
+                result. The SDK only transports it and rejects a dict that tries
+                to supply a service-set field.
 
         Returns:
             EmbedResult with the watermarked vector and metadata. ``subject_proof``
@@ -189,13 +183,10 @@ class MnemoClient:
                 call for the same request) idempotent as well. When omitted, the
                 SDK generates a uuid4 for this call only; two separate calls
                 never share a generated key.
-            subject_proof: Optional server-issued carrier (``SubjectProof`` or dict)
-                obtained from a prior ``embed``. It is an **opaque, untrusted**
-                artifact: the SDK passes it through verbatim and never validates,
-                verifies, or interprets it — the **server** re-verifies it. It is
-                only consulted on a STRICT oracle-only Case 3 verify under FP-squash;
-                in other modes/paths it is ignored, so passing it does not imply
-                always-on work or latency.
+            subject_proof: Optional opaque proof token (``SubjectProof`` or dict)
+                issued by the service on a prior ``embed``. The SDK passes it
+                through verbatim and never validates or interprets it; only the
+                service can check it, and the service decides when it is used.
 
         Returns:
             VerifyResult if a watermark is detected, None otherwise.

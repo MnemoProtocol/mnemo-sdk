@@ -1,8 +1,7 @@
-"""Regression guard (PR J1): the SDK exposes ONLY core-owned runtime surfaces.
+"""Regression guard: the SDK exposes ONLY supported service endpoints.
 
-The MnemoV2 core runtime supports `/v1/embed` and `/v1/verify` only — there is no
-`/v1/embed/batch` or `/v1/verify/batch` endpoint (core owns metering, proof
-issuance/verification, tenant scoping, STRICT gating, and audit per call). The
+The Mnemo service supports `/v1/embed` and `/v1/verify` only — there is no
+`/v1/embed/batch` or `/v1/verify/batch` endpoint. The
 unsupported `MnemoBatch` scaffold (which posted to those non-existent routes) was
 removed. These tests lock the contract so the batch surface cannot silently return.
 """

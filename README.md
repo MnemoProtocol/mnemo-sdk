@@ -82,17 +82,16 @@ There is no public MCP server in v1; use the HTTP API.
 
 You can optionally attach **subject context** to an embed and replay a
 **server-issued proof** at verify time. Every subject-aware call routes to the
-Mnemo core runtime, which performs all trust work centrally (canonicalization,
-proof issuance, proof verification, tenant scoping, metering, and fail-closed
-gating). **The SDK is transport only — it never derives a fingerprint, mints a
-proof, validates a proof, or interprets corroboration.**
+Mnemo service, which processes the subject and issues and checks any proof.
+**The SDK is transport only — it never creates, validates, or interprets a
+proof.**
 
 ```python
 from mnemo_sdk import MnemoClient, Subject
 
 client = MnemoClient(api_key="your-api-key")
 
-# Embed with subject context (RAW context — the server derives the fingerprint).
+# Embed with subject context (client context — the service processes it).
 result = client.embed(
     vector=vector,  # 512–4096 floats
     model_id="text-embedding-3-small",
@@ -115,19 +114,15 @@ check = client.verify(vector=result.watermarked_vector, subject_proof=proof)
 How it works and what to expect:
 
 - **`subject` is raw client context** sent to the server. You provide
-  `subject_uri` + `subject_type` (and optional locators/adapters). The **server
-  derives** the tenant-scoped `subject_fingerprint`; the SDK never computes it,
-  and it rejects any attempt to pass `subject_fingerprint` / `trust_mode` /
-  `proof*` fields.
+  `subject_uri` + `subject_type` (and optional locators/adapters). The Mnemo
+  service processes it; the SDK only transports it, and it rejects any attempt to
+  pass the service-set fields `subject_fingerprint` / `trust_mode` / `proof*`.
 - **`subject_proof` is an opaque, server-issued carrier.** Treat it as a token:
   store it, and pass it back on `verify`. The SDK does **not** validate, verify,
-  or interpret it — the server re-verifies it (a tenant-scoped, UID-bound HMAC).
-- **The proof only matters in a narrow case.** It is consulted **only** for an
-  oracle-only "Case 3" verification under **STRICT** mode (the provenance-grade,
-  claim-bearing posture) with the server's FP-squash gate enabled. It does **not**
-  run on every verify and should not be assumed to add latency on normal paths.
-  **BALANCED / HIGH_RECALL are non-claim-bearing** for subject-proof / compressed
-  oracle-only recovery.
+  or interpret it — only the service can check it. It may be absent if the
+  feature is not enabled.
+- The service decides when a proof is used; passing one does not imply extra
+  work or latency on every verify.
 - Missing or invalid proofs **fail closed** server-side; the SDK simply transports
   whatever you pass.
 
