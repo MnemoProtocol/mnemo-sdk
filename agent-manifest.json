@@ -126,6 +126,12 @@
     "license": "LicenseRef-Proprietary",
     "license_url": "https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE",
     "sdk_terms_url": "https://github.com/MnemoProtocol/mnemo-sdk/blob/main/TERMS.md",
-    "governing_law": "Delaware, USA"
+    "governing_law": "Delaware, USA",
+    "terms_of_service": "https://www.trymnemo.com/terms",
+    "privacy_policy": "https://www.trymnemo.com/privacy",
+    "security_contact": "security@trymnemo.com",
+    "security_policy": "https://github.com/MnemoProtocol/mnemo-sdk/blob/main/SECURITY.md",
+    "pricing": "https://www.trymnemo.com/pricing",
+    "acceptance": "Use of the Mnemo API, including through an automated agent, script, SDK, wallet or other client, constitutes acceptance of the Mnemo Terms of Service on behalf of the operator and of the person or entity on whose behalf it acts."
   }
 }
