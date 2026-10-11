@@ -1,19 +1,8 @@
 """Trusted subject binding (optional) — embed with subject, replay proof on verify.
 
-Every subject-aware call routes to the Mnemo core runtime, which does ALL trust
-work centrally: canonicalization, proof issuance, proof verification, tenant
-scoping, metering, and fail-closed gating. The SDK is transport only — it never
-derives a fingerprint, mints a proof, validates a proof, or interprets
-corroboration.
-
-Notes on behavior:
-  * `subject` is RAW client context; the server derives `subject_fingerprint`.
-  * `subject_proof` is an opaque, server-issued carrier — store it, replay it; the
-    server re-verifies it. It is consulted ONLY on a STRICT oracle-only "Case 3"
-    verify under the server's FP-squash gate (the provenance-grade, claim-bearing
-    path). It does not run on every verify and should not be assumed to add latency
-    on normal paths. BALANCED/HIGH_RECALL are non-claim-bearing for subject-proof /
-    compressed oracle-only recovery.
+Notes:
+  * `subject` is client context. The Mnemo service processes it; the SDK only transports it.
+  * `subject_proof` is an opaque token issued by the service. Store it and pass it back on verify unchanged; only the service can check it. It may be absent if the feature is not enabled.
 """
 
 import random
@@ -24,8 +13,8 @@ from mnemo_sdk import MnemoClient, Subject
 def main() -> None:
     client = MnemoClient(api_key="your-api-key")
 
-    # 1) Embed with raw subject context. The server canonicalizes it and (when the
-    #    subject-proof transport is enabled+configured) returns a proof carrier.
+    # 1) Embed with subject context. The service processes it and (when the
+    #    feature is enabled) returns an opaque proof token.
     result = client.embed(
         # Stand-in for a real embedding (512-4096 finite numbers).
         vector=[random.uniform(-1.0, 1.0) for _ in range(768)],
@@ -34,8 +23,7 @@ def main() -> None:
             subject_uri="mnemo://subj/your-tenant/document/doc-123",
             subject_type="document",
             object_id="doc-123",
-            # `adapters` is opaque per-namespace metadata; the server never reads it
-            # for verification. It is stored verbatim only.
+            # `adapters` is opaque per-namespace metadata, stored verbatim.
             adapters={"your_namespace": {"source": "ingest-pipeline-v2"}},
         ),
     )
@@ -57,8 +45,8 @@ def main() -> None:
         return
     print("verified:", check.verified, "confidence:", check.confidence)
     if check.signals is not None:
-        # Diagnostic only. `mode == "STRICT"` is the provenance-grade posture; the
-        # subject proof is only consulted on the STRICT oracle-only path.
+        # Diagnostic signals returned by the service; values are informational
+        # and may change.
         print("method:", check.signals.method, "mode:", check.signals.mode)
 
 

@@ -1,10 +1,9 @@
-"""PR J1 — SDK alignment to the MnemoV2 #65 trusted subject-proof transport.
+"""Subject / subject_proof transport tests.
 
-The SDK is TRANSPORT ONLY: it passes raw `subject` context and the opaque
-`subject_proof` carrier through to the core runtime, which derives the fingerprint,
-mints the proof, and re-verifies it. These tests assert the SDK:
+The SDK is TRANSPORT ONLY: it passes `subject` context and the opaque
+`subject_proof` token through to the Mnemo service. These tests assert the SDK:
   * sends `subject` only when provided (backward compatible otherwise),
-  * never derives a fingerprint or supplies trust/proof fields,
+  * never supplies service-set fields,
   * captures the server-issued `subject_proof` into EmbedResult,
   * passes a `subject_proof` carrier back verbatim on verify, untouched and untrusted,
   * parses optional `signals`, tolerates missing + unknown response fields.
@@ -29,10 +28,10 @@ def _mock_response(status_code=200, json_data=None, headers=None):
     return resp
 
 
-# A representative server-issued carrier (verbatim shape from V1SubjectProofResponse).
+# A representative opaque proof token as returned by the service.
 SUBJECT_PROOF_CARRIER = {
     "version": "subject-proof-v1",
-    "proof_type": "hmac_sha256",
+    "proof_type": "opaque-v1",
     "proof_key_id": "subjk1",
     "tenant_id": "tenantA",
     "subject_fingerprint": "f" * 64,

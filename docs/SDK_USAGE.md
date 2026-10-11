@@ -58,8 +58,8 @@ if result is not None:
 
 When verification fails, `verify()` returns `None` — not a `VerifyResult` with `verified=False`.
 
-`VerifyResult` may also carry an optional `signals` diagnostic block (method,
-spectral/oracle statuses, oracle metrics, `mode`, `latency_ms`).
+`VerifyResult` may also carry an optional `signals` block: diagnostic signals
+returned by the service; values are informational and may change.
 
 ---
 
@@ -67,9 +67,9 @@ spectral/oracle statuses, oracle metrics, `mode`, `latency_ms`).
 
 `embed()` accepts an optional `subject` (a `Subject` or dict of **raw** context),
 and `verify()` accepts an optional `subject_proof` (the server-issued carrier from a
-prior embed). All subject-aware calls route to the core runtime, which does all
-trust work; **the SDK is transport only** — it never derives a fingerprint, mints a
-proof, validates a proof, or interprets corroboration.
+prior embed). The Mnemo service processes the subject and issues and checks any
+proof; **the SDK is transport only** — it never creates, validates, or interprets
+a proof.
 
 ```python
 from mnemo_sdk import Subject
@@ -80,14 +80,11 @@ emb = client.embed(vec, model_id="m", subject=Subject(
 check = client.verify(emb.watermarked_vector, subject_proof=emb.subject_proof)
 ```
 
-- `subject` is **raw context**; the server derives `subject_fingerprint`. The SDK
-  rejects any client-supplied `subject_fingerprint` / `trust_mode` / `proof*`.
-- `subject_proof` is **opaque and untrusted**; the SDK replays it verbatim and the
-  **server** re-verifies it.
-- The proof is consulted **only** on a STRICT oracle-only Case 3 verify under
-  FP-squash (the provenance-grade, claim-bearing path) — not on every verify, and
-  with no implied always-on latency. **BALANCED/HIGH_RECALL are non-claim-bearing**
-  for subject-proof / oracle-only recovery.
+- `subject` is **client context**; the service processes it. The SDK rejects any
+  client-supplied service-set field (`subject_fingerprint` / `trust_mode` / `proof*`).
+- `subject_proof` is an **opaque token** issued by the service; the SDK replays it
+  verbatim and only the service can check it. It may be absent if the feature is
+  not enabled. Passing it does not imply extra work or latency on every verify.
 
 ---
 

@@ -45,7 +45,7 @@ Autonomous agents without an account use the Mnemo Agent API directly over HTTP 
 
 ## Trusted subject binding (optional)
 
-You may optionally bind a **subject** to an embed and replay a **server-issued proof** at verify time. All trust work happens server-side in the Mnemo core runtime (canonicalization, proof issuance, proof verification, tenant scoping, metering, fail-closed gating). The SDK is **transport only** — it never derives a fingerprint, mints a proof, or validates/trusts a proof.
+You may optionally bind a **subject** to an embed and replay a **server-issued proof** at verify time. The Mnemo service processes the subject and issues and checks any proof. The SDK is **transport only** — it never creates, validates, or interprets a proof.
 
 SDK types: `Subject`, `SubjectProof`, `VerifySignals`.
 
@@ -61,10 +61,9 @@ check = client.verify(emb.watermarked_vector, subject_proof=emb.subject_proof)
 ```
 
 Contract:
-- `subject` is **raw client context**; the **server** derives the tenant-scoped `subject_fingerprint`. The client cannot supply a fingerprint, trust mode, or any proof field.
-- `subject_proof` is a **server-issued, opaque, untrusted carrier**. The SDK passes it back verbatim; the **server** re-verifies it (a tenant-scoped, UID-bound HMAC). Do not parse it for trust.
-- The proof is consulted **only** on an oracle-only "Case 3" verification under **STRICT** mode (the provenance-grade, claim-bearing posture) with the server's FP-squash gate enabled — **not on every verify**, and with no implied always-on latency.
-- **BALANCED / HIGH_RECALL are non-claim-bearing** for subject-proof / compressed (PQ) oracle-only recovery.
+- `subject` is **client context**; the Mnemo service processes it and the SDK only transports it. The client cannot supply service-set fields (`subject_fingerprint`, `trust_mode`, `proof*`).
+- `subject_proof` is an **opaque proof token issued and checked by the service**. Store it and pass it back on verify unchanged; only the service can check it. Do not parse it. It may be absent if the feature is not enabled.
+- The service decides when a proof is used; it does not imply extra work or latency on every verify.
 - Missing/invalid proofs **fail closed** server-side.
 
 ## Policy

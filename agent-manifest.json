@@ -26,12 +26,12 @@
       "name": "embed",
       "method": "POST",
       "path": "/v1/embed",
-      "description": "Watermark a single embedding vector. Returns vector_uid and watermarked_vector. Optionally accepts raw `subject` context; the server derives a tenant-scoped subject_fingerprint and (when subject binding is enabled+configured server-side) returns a server-issued subject_proof carrier.",
+      "description": "Watermark a single embedding vector. Returns vector_uid and watermarked_vector. Optionally accepts `subject` context, which the service processes; when the feature is enabled it returns an opaque subject_proof token.",
       "required_params": ["vector", "model_id"],
       "optional_params": ["model_version", "policy", "subject"],
       "returns": ["vector_uid", "watermarked_vector", "created_at", "dimensions", "subject_proof"],
       "billing_event": false,
-      "note": "`subject` is RAW client context only; the server derives all trust (fingerprint + proof). The client cannot supply subject_fingerprint/trust_mode/proof fields. `subject_proof` is absent unless a subject was supplied and the transport is enabled+configured."
+      "note": "`subject` is client context only; the service processes it. The client cannot supply the service-set subject_fingerprint/trust_mode/proof fields. `subject_proof` is absent unless a subject was supplied and the transport is enabled+configured."
     },
     {
       "name": "verify",
@@ -42,7 +42,7 @@
       "optional_params": ["subject_proof"],
       "returns": ["verified", "confidence", "vector_uid", "policy_ok", "signals"],
       "billing_event": true,
-      "note": "Counts against the account plan's included monthly verifications. The SDK sends an Idempotency-Key on every verify() call (the caller's idempotency_key verbatim, or a uuid4 generated for that call) and reuses it on every internal retry, so a retried verify is not counted again. `subject_proof` is an opaque, UNTRUSTED carrier replayed verbatim; the server re-verifies it. It is consulted only on a STRICT oracle-only Case 3 verify under FP-squash — not on every verify."
+      "note": "Counts against the account plan's included monthly verifications. The SDK sends an Idempotency-Key on every verify() call (the caller's idempotency_key verbatim, or a uuid4 generated for that call) and reuses it on every internal retry, so a retried verify is not counted again. `subject_proof` is an opaque token issued and checked by the service, passed back unchanged; the service decides when it is used."
     },
     {
       "name": "health",
@@ -90,11 +90,9 @@
     "summary": "Optional trusted subject binding. The server owns all trust; the SDK is transport only.",
     "sdk_types": ["Subject", "SubjectProof", "VerifySignals"],
     "rules": [
-      "subject is RAW client context; the server derives the tenant-scoped subject_fingerprint.",
-      "subject_proof is a server-issued, opaque, UNTRUSTED carrier; the SDK never validates or trusts it; the server re-verifies it (tenant-scoped, UID-bound HMAC).",
-      "STRICT is the provenance-grade / claim-bearing posture.",
-      "subject_proof is consulted only on a STRICT oracle-only Case 3 verify under FP-squash; it does not run on every verify and does not imply always-on latency.",
-      "BALANCED and HIGH_RECALL are non-claim-bearing for PQ / oracle-only subject-proof recovery.",
+      "subject is client context; the Mnemo service processes it and the SDK only transports it.",
+      "subject_proof is an opaque token issued by the service; store it and pass it back on verify unchanged; only the service can check it; it may be absent if the feature is not enabled.",
+      "signals are diagnostic values returned by the service; they are informational and may change.",
       "missing or invalid proofs fail closed server-side."
     ],
     "no_production_pq_claim": true

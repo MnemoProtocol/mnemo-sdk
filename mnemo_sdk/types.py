@@ -37,13 +37,11 @@ class PolicyConfig:
 
 @dataclass
 class Subject:
-    """Optional subject context for an embed call (PR I transport).
+    """Optional subject context for an embed call.
 
-    This is **raw client context only**. The server derives the tenant-scoped
-    ``subject_fingerprint`` and mints the proof — the SDK never computes them. By
-    construction this model has NO ``subject_fingerprint`` / ``trust_mode`` /
-    ``proof_*`` fields; the client cannot supply them. Mirrors the runtime
-    ``V1SubjectRequest`` shape exactly.
+    This is **client context only**; the Mnemo service processes it and the SDK
+    only transports it. By construction this model has NO ``subject_fingerprint`` /
+    ``trust_mode`` / ``proof_*`` fields; those are set by the service.
     """
 
     subject_uri: str
@@ -53,7 +51,7 @@ class Subject:
     parent_id: Optional[str] = None
     segment_id: Optional[str] = None
     offset: Optional[Dict[str, Any]] = None
-    adapters: Optional[Dict[str, Any]] = None  # opaque per-namespace metadata; server never reads it for trust
+    adapters: Optional[Dict[str, Any]] = None  # opaque per-namespace metadata, stored verbatim
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to the wire shape, dropping None-valued optionals."""
@@ -70,15 +68,14 @@ class Subject:
 
 @dataclass
 class SubjectProof:
-    """Server-issued subject-proof carrier returned by ``embed`` (PR I transport).
+    """Opaque subject-proof token returned by ``embed``.
 
-    This is an **opaque, UNTRUSTED transport artifact**. The SDK never validates,
-    verifies, or interprets it — it only carries it back to the server on a later
-    ``verify`` call, where the server re-verifies it (tenant-scoped UID-bound HMAC)
-    and only honors it for STRICT oracle-only Case 3 under FP-squash. The original
+    This is an **opaque proof token issued and checked by the service**. The SDK
+    never validates or interprets it — it only carries it back to the service on a
+    later ``verify`` call; only the service can check it. The original
     server payload is preserved verbatim (``_raw``) so it round-trips byte-for-byte
     even if the server adds fields later. The typed attributes are read-only
-    convenience accessors. Mirrors the runtime ``V1SubjectProofResponse``.
+    convenience accessors.
     """
 
     version: Optional[str] = None
@@ -135,7 +132,7 @@ class EmbedResult:
     watermarked_vector: List[float]
     created_at: str
     dimensions: int
-    # PR I: server-issued subject-proof carrier; present only when a `subject` was
+    # Opaque subject-proof token issued by the service; present only when a `subject` was
     # supplied AND the server-side transport is enabled+configured, else None.
     subject_proof: Optional["SubjectProof"] = None
 
@@ -157,21 +154,19 @@ class EmbedResult:
 
 @dataclass
 class VerifySignals:
-    """Diagnostic per-layer arbitration breakdown returned with a verify result.
+    """Diagnostic signals returned by the service with a verify result.
 
-    Ground truth from the server's decision (additive since 2026-04-22). ``mode`` is
-    the effective decision mode (``STRICT`` | ``BALANCED`` | ``HIGH_RECALL``); only
-    STRICT is the provenance-grade / claim-bearing posture for subject-proof / PQ
-    oracle-only recovery. Mirrors the runtime ``V1VerifySignals``.
+    Values are informational and may change; field names are kept for
+    compatibility. Do not build trust decisions on them.
     """
 
-    method: Optional[str] = None          # "spectral" | "oracle" | "both" | "none" | "conflict"
-    spectral_status: Optional[str] = None  # "MATCH" | "NO_MATCH" | "ERROR"
-    oracle_status: Optional[str] = None    # "MATCH" | "NO_MATCH" | "AMBIGUOUS" | "SKIPPED" | "ERROR"
+    method: Optional[str] = None
+    spectral_status: Optional[str] = None
+    oracle_status: Optional[str] = None
     oracle_best_dist: Optional[float] = None
     oracle_margin: Optional[float] = None
     oracle_candidate_count: Optional[int] = None
-    mode: Optional[str] = None             # "STRICT" | "BALANCED" | "HIGH_RECALL"
+    mode: Optional[str] = None
     latency_ms: Optional[float] = None
 
     @classmethod
