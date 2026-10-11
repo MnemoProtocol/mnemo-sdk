@@ -198,10 +198,12 @@ Full reference documentation is in the [docs/](https://github.com/MnemoProtocol/
 
 ## License
 
-Proprietary. See [LICENSE](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE) and [TERMS.md](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/TERMS.md).
+Mnemo SDK License v2.0 (proprietary). See [LICENSE](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE). You may use the SDK in development, testing, evaluation and production. Access to the Mnemo hosted Services after the 30-day trial requires a paid plan or written authorization.
 
 ## Legal
 
 Use of the Mnemo API, including through an automated agent, script, SDK, wallet or other client, constitutes acceptance of the Mnemo Terms of Service on behalf of the operator and of the person or entity on whose behalf it acts. [Terms of Service](https://www.trymnemo.com/terms) · [Privacy Policy](https://www.trymnemo.com/privacy) · [Pricing](https://www.trymnemo.com/pricing) · Security reports: security@trymnemo.com (see [SECURITY.md](SECURITY.md)).
+
+The files listed in `examples/LICENSE` are MIT-licensed so you can copy and adapt them freely. Everything else in this repository, including the `mnemo_sdk` package, is licensed under the Mnemo SDK License (`LICENSE`). Neither license grants rights in Mnemo's hosted Services, verification technology or patents (patent pending). Use of the Services is governed by the [Terms of Service](https://www.trymnemo.com/terms).
 
 Copyright © Mnemo LLC. All rights reserved. Patent pending. Viewing this repository does not grant a license; rights are granted only as expressly stated in the applicable license and Terms of Service.

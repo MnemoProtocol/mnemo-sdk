@@ -96,7 +96,7 @@ Single dependency: `requests`. No local algorithm code. All watermarking is serv
 - Website: https://www.trymnemo.com
 - Python SDK source: https://github.com/MnemoProtocol/mnemo-sdk
 - Guarantees and limitations: https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/GUARANTEES.md
-- License and terms: https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE, https://github.com/MnemoProtocol/mnemo-sdk/blob/main/TERMS.md
+- License and terms: SDK License v2.0 https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE (development, testing, evaluation and production use permitted); Mnemo Services governed by the Terms of Service https://www.trymnemo.com/terms
 
 ## Legal
 

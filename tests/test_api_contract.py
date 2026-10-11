@@ -199,6 +199,6 @@ def test_no_license_classifier_alongside_license_expression():
         pytest.skip("pyproject.toml not present (installed package)")
     project = tomllib.loads(pyproject.read_text())["project"]
     assert isinstance(project["license"], str)
-    assert project["license"] == "LicenseRef-Proprietary"
-    assert set(project["license-files"]) == {"LICENSE", "TERMS.md"}
+    assert project["license"] == "LicenseRef-Mnemo-SDK-2.0"
+    assert set(project["license-files"]) == {"LICENSE"}
     assert not [c for c in project.get("classifiers", []) if c.startswith("License ::")]

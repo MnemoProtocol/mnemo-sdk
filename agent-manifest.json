@@ -121,10 +121,9 @@
   },
 
   "legal": {
-    "license": "LicenseRef-Proprietary",
+    "license": "LicenseRef-Mnemo-SDK-2.0",
     "license_url": "https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE",
-    "sdk_terms_url": "https://github.com/MnemoProtocol/mnemo-sdk/blob/main/TERMS.md",
-    "governing_law": "Delaware, USA",
+    "governing_law": "Wyoming, USA",
     "terms_of_service": "https://www.trymnemo.com/terms",
     "privacy_policy": "https://www.trymnemo.com/privacy",
     "security_contact": "security@trymnemo.com",

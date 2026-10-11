@@ -2,7 +2,8 @@
 
 > **This document is informational only and does not create contractual
 > obligations, warranties, or guarantees.** For binding terms, see
-> [LICENSE](../LICENSE) and [TERMS.md](../TERMS.md).
+> [LICENSE](../LICENSE) and the
+> [Terms of Service](https://www.trymnemo.com/terms).
 
 ## What the SDK does
 

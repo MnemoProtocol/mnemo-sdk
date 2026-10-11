@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025-2026 Mnemo LLC. Example code only — see examples/LICENSE for scope.
+# Use of the Mnemo Services is governed by https://www.trymnemo.com/terms.
 """Mnemo SDK verification example.
 
 Shows how to verify whether a vector contains a Mnemo watermark

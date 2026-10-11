@@ -1,0 +1,41 @@
+Scope of this license
+---------------------
+This MIT License applies ONLY to the following files, each of which carries the
+SPDX header "SPDX-License-Identifier: MIT":
+
+  examples/quickstart.py
+  examples/embed_example.py
+  examples/verify_example.py
+  examples/subject_binding_example.py
+
+It does not apply to any other file in this repository, to the Mnemo SDK
+(the `mnemo_sdk` package), to the `mnemo-protocol` distribution, to the Mnemo
+protocol or specification, to the Mnemo hosted Services, or to any Mnemo
+verification, watermarking, provenance or lineage technology, algorithm,
+method, server-side implementation, trade secret, trademark, patent or patent
+application. Those remain governed by the Mnemo SDK License, the Mnemo Terms
+of Service and applicable law. Calling the Mnemo Services from code derived
+from these examples requires access under the Mnemo Terms of Service. Mnemo
+technology is patent pending; this license grants no patent rights.
+
+MIT License
+
+Copyright (c) 2025-2026 Mnemo LLC
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of the files listed above (the "Example Files"), to deal in the Example Files
+without restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies of the
+Example Files, and to permit persons to whom the Example Files are furnished to
+do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Example Files.
+
+THE EXAMPLE FILES ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE EXAMPLE FILES OR THE USE OR OTHER DEALINGS IN
+THE EXAMPLE FILES.
