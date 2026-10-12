@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "name": "Mnemo Python SDK",
   "package": "mnemo-protocol",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "description": "Python client for the Mnemo API: watermark embedding vectors and verify them later. Authenticates with an account API key; does not implement accountless agent namespaces or x402 payments.",
   "homepage": "https://www.trymnemo.com",
   "api_base": "https://api.trymnemo.com",
