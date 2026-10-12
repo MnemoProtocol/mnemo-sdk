@@ -12,9 +12,9 @@ MNEMO SDK LICENSE, Version 2.0
 - "Mnemo" means Mnemo LLC.
 
 2. License grant. Subject to this License, the Terms and any applicable fees,
-Mnemo LLC grants you a limited, non-exclusive, non-transferable, non-sublicensable
-license to install, use, and internally modify the Mnemo SDK solely to
-integrate with and access the Mnemo Services. You may use the SDK for
+Mnemo LLC grants you a limited, non-exclusive, non-transferable, non-
+sublicensable license to install, use, and internally modify the Mnemo SDK
+solely to integrate with and access the Mnemo Services. You may use the SDK for
 development, testing, evaluation, and production use. Production access to the
 Mnemo Services requires an active paid plan or other written authorization from
 Mnemo after any applicable free trial expires.
@@ -25,17 +25,17 @@ established by Mnemo, and is intended solely to evaluate the Services.
 Continued use after the applicable trial period or trial limits requires a paid
 plan.
 
-4. Internal modifications; distribution. You may make reasonable modifications to the SDK
-solely for your own internal integration with the Mnemo Services. You may
-permit your employees and contractors to use such modifications on your behalf,
-provided they are subject to obligations consistent with this License and the
-Terms. You may distribute the unmodified SDK, in object or source form, solely
-as a dependency of your application or service that accesses the Mnemo
+4. Internal modifications; distribution. You may make reasonable modifications
+to the SDK solely for your own internal integration with the Mnemo Services.
+You may permit your employees and contractors to use such modifications on your
+behalf, provided they are subject to obligations consistent with this License
+and the Terms. You may distribute the unmodified SDK, in object or source form,
+solely as a dependency of your application or service that accesses the Mnemo
 Services, provided you retain this License and all notices. Except as permitted
-in the preceding sentence, you may not distribute, sublicense, sell, or make the
-SDK or a modified version available, and in no case may you offer the SDK or a
-modified version as a standalone product or service, without Mnemo's written
-permission.
+in the preceding sentence, you may not distribute, sublicense, sell, or make
+the SDK or a modified version available, and in no case may you offer the SDK
+or a modified version as a standalone product or service, without Mnemo's
+written permission.
 
 5. Core IP. Except for the limited rights expressly granted, Mnemo retains all
 right, title, and interest in and to the Services, SDK, protocols,
