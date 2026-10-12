@@ -7,11 +7,12 @@ MNEMO SDK LICENSE, Version 2.0
   `mnemo-protocol` package and in the `MnemoProtocol/mnemo-sdk` repository,
   excluding files licensed under `examples/LICENSE`.
 - "Services" means the Mnemo hosted services, as defined in the Mnemo Terms of
-  Service at https://www.trymnemo.com/terms (the "Terms").
+  Service, version 2026-10-12 or any later version, published at
+  https://www.trymnemo.com/terms (the "Terms").
 - "Mnemo" means Mnemo LLC.
 
-2. License grant. Subject to these Terms and any applicable fees, Mnemo LLC
-grants you a limited, non-exclusive, non-transferable, non-sublicensable
+2. License grant. Subject to this License, the Terms and any applicable fees,
+Mnemo LLC grants you a limited, non-exclusive, non-transferable, non-sublicensable
 license to install, use, and internally modify the Mnemo SDK solely to
 integrate with and access the Mnemo Services. You may use the SDK for
 development, testing, evaluation, and production use. Production access to the
@@ -24,12 +25,16 @@ established by Mnemo, and is intended solely to evaluate the Services.
 Continued use after the applicable trial period or trial limits requires a paid
 plan.
 
-4. Internal modifications. You may make reasonable modifications to the SDK
+4. Internal modifications; distribution. You may make reasonable modifications to the SDK
 solely for your own internal integration with the Mnemo Services. You may
 permit your employees and contractors to use such modifications on your behalf,
-provided they are subject to obligations consistent with these Terms. You may
-not distribute, sublicense, sell, or make the SDK or a modified version
-available as a standalone product or service without Mnemo's written
+provided they are subject to obligations consistent with this License and the
+Terms. You may distribute the unmodified SDK, in object or source form, solely
+as a dependency of your application or service that accesses the Mnemo
+Services, provided you retain this License and all notices. Except as permitted
+in the preceding sentence, you may not distribute, sublicense, sell, or make the
+SDK or a modified version available, and in no case may you offer the SDK or a
+modified version as a standalone product or service, without Mnemo's written
 permission.
 
 5. Core IP. Except for the limited rights expressly granted, Mnemo retains all
@@ -38,10 +43,14 @@ documentation, verification technology, watermarking technology, provenance and
 lineage technology, algorithms, methods, software, patents, patent
 applications, trade secrets, and other intellectual property.
 
-6. Competing implementations. You may not use the SDK, protocol materials,
-documentation, or other Mnemo technology to develop, operate, or provide a
-product or service that substitutes for or materially replicates Mnemo's
-proprietary verification, watermarking, provenance, or lineage services.
+6. Competing implementations. You may not use the SDK, protocol materials or
+documentation to develop, operate or provide a product or service that
+implements Mnemo's proprietary watermarking or verification methods, or that
+offers to third parties a substitute for the Mnemo Services built using the
+SDK, protocol materials or documentation. Nothing in this License restricts you
+from independently developing or using technology without use of the SDK,
+Mnemo's protocol materials, documentation or Confidential Information (as
+defined in the Terms).
 
 7. Patent reservation. Except to the limited extent necessary to exercise the
 rights expressly granted to access and use the Mnemo Services, no license or
@@ -61,10 +70,13 @@ expressly reserved.
 terms stated there. That license does not extend to the SDK or any Mnemo
 technology or patent.
 
-10. Disclaimer; limitation of liability. As stated in the Terms (Sections
-13-14), which apply to the SDK.
+10. Disclaimer; limitation of liability. The disclaimers and limitations of
+liability in the Terms apply to the SDK and this License, including the Terms'
+aggregate liability cap (the greater of US$100 or the fees paid or payable by
+you to Mnemo in the twelve months preceding the claim). This License does not
+establish any separate or additional liability cap.
 
-11. Governing law. These terms are governed by the laws of the State of
+11. Governing law. This License is governed by the laws of the State of
 Wyoming, without regard to its conflict-of-laws principles. Any dispute is
 subject to the exclusive jurisdiction of the state and federal courts located
 in Wyoming.
