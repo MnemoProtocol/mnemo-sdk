@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025-2026 Mnemo LLC. Example code only — see examples/LICENSE for scope.
+# Use of the Mnemo Services is governed by https://www.trymnemo.com/terms.
 """Mnemo SDK quickstart example.
 
 Demonstrates basic embed and verify operations against https://api.trymnemo.com.

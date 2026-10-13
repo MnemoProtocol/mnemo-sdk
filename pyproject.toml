@@ -4,10 +4,10 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mnemo-protocol"
-version = "3.1.1"
+version = "3.1.2"
 description = "Python SDK for the Mnemo watermarking API"
-license = "LicenseRef-Proprietary"
-license-files = ["LICENSE", "TERMS.md"]
+license = "LicenseRef-Mnemo-SDK-2.0"
+license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [{ name = "Mnemo LLC" }]
@@ -36,4 +36,4 @@ Issues = "https://github.com/MnemoProtocol/mnemo-sdk/issues"
 packages = ["mnemo_sdk"]
 
 [tool.hatch.build.targets.sdist]
-include = ["mnemo_sdk", "LICENSE", "TERMS.md", "README.md", "pyproject.toml"]
+include = ["/mnemo_sdk", "/LICENSE", "/README.md", "/pyproject.toml"]

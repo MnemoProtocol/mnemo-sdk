@@ -96,11 +96,12 @@ Single dependency: `requests`. No local algorithm code. All watermarking is serv
 - Website: https://www.trymnemo.com
 - Python SDK source: https://github.com/MnemoProtocol/mnemo-sdk
 - Guarantees and limitations: https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/GUARANTEES.md
-- License and terms: https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE, https://github.com/MnemoProtocol/mnemo-sdk/blob/main/TERMS.md
+- License and terms: SDK License v2.0 https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE (development, evaluation, testing and production integration permitted; no standalone resale or sublicensing); Mnemo Services governed by the Terms of Service https://www.trymnemo.com/terms (continued access after any applicable trial requires a valid paid Service entitlement or other access expressly authorized by Mnemo)
+- Governing law: Wyoming, USA
 
 ## Legal
 
-- [Terms of Service](https://www.trymnemo.com/terms): Use of the Mnemo API, including through an automated agent, script, SDK, wallet or other client, constitutes acceptance of the Mnemo Terms of Service on behalf of the operator and of the person or entity on whose behalf it acts.
+- [Terms of Service](https://www.trymnemo.com/terms) (version 2026-10-12; incorporates the DPA https://www.trymnemo.com/dpa where applicable): Use of the Mnemo API, including through an automated agent, script, SDK, wallet or other client, constitutes acceptance of the Mnemo Terms of Service on behalf of the operator and of the person or entity on whose behalf it acts.
 - [Privacy Policy](https://www.trymnemo.com/privacy)
 - Security reports: security@trymnemo.com
 - [Pricing](https://www.trymnemo.com/pricing)
