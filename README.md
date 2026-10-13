@@ -198,7 +198,7 @@ Full reference documentation is in the [docs/](https://github.com/MnemoProtocol/
 
 ## License
 
-Mnemo SDK License v2.0 (proprietary; governed by Wyoming law). See [LICENSE](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE). You may use the SDK for development, evaluation, testing and production integration, and you may distribute the unmodified SDK only as incorporated into, or as a required dependency of, your own application that interoperates with Mnemo. Standalone resale or sublicensing of the SDK is not permitted. The SDK license is separate from access to the Mnemo hosted Services: after the free trial (at most 30 days and 10,000 verifications in total, ending earlier when the allowance is used up), use of the Services requires a paid plan or written authorization from Mnemo.
+Mnemo SDK License v2.0 (proprietary; governed by Wyoming law). See [LICENSE](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE). You may use the SDK for development, evaluation, testing and production integration, and you may distribute the unmodified SDK only as incorporated into, or as a required dependency of, your own application that interoperates with Mnemo. Standalone resale or sublicensing of the SDK is not permitted. The SDK license is separate from access to the Mnemo hosted Services: the free trial lasts at most 30 days and 10,000 verifications in total, ending earlier when the allowance is used up. Continued access to Mnemo's hosted Services after any applicable trial requires a valid paid Service entitlement or other access expressly authorized by Mnemo. A paid Service entitlement may be provided through a subscription or another supported paid access mechanism.
 
 ## Legal
 

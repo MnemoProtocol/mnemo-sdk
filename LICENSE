@@ -23,8 +23,10 @@ does not by itself entitle you to use the Services; see Section 3.
 Terms and is separate from this License. Mnemo may provide a free trial of the
 Services. A trial lasts at most 30 days and includes at most 10,000
 verifications in total, and it ends earlier when that allowance is used up.
-After the trial ends, use of the Services requires an active paid plan or other
-written authorization from Mnemo.
+Continued access to Mnemo's hosted Services after any applicable trial requires
+a valid paid Service entitlement or other access expressly authorized by Mnemo.
+A paid Service entitlement may be provided through a subscription or another
+supported paid access mechanism.
 
 4. Internal modifications; distribution. You may make reasonable modifications
 to the SDK solely for your own internal integration with the Mnemo Services.
@@ -87,6 +89,9 @@ Wyoming, without regard to its conflict-of-laws principles. Any dispute is
 subject to the exclusive jurisdiction of the state and federal courts located
 in Wyoming.
 
-12. Termination. This license ends automatically if you breach it or the Terms,
-or when your access to the Services ends, except that you may keep using the
-SDK to access the Services under any new authorization.
+12. Termination. This License terminates automatically if you breach it or
+the Terms. Suspension or expiration of your access to the hosted Mnemo Services
+does not, by itself, terminate this License. Access to hosted Mnemo Services
+requires a valid Service entitlement. Mnemo may terminate this License for
+breach or on other grounds expressly stated in this License. Sections 5, 6, 7,
+8, 10 and 11 survive any termination.
