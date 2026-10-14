@@ -53,7 +53,7 @@ if result is not None:
 |-------|------|-------------|
 | `verified` | `bool` | Always `True` when a result is returned |
 | `confidence` | `float` | Relative confidence signal, not a probability (see GUARANTEES.md) |
-| `vector_uid` | `str` | The identified vector's UID |
+| `vector_uid` | `str` | `vector_uid` of the matched object |
 | `policy_ok` | `bool` | Reflects at most the TTL set at embed time |
 
 When the API answers `verified: false`, `verify()` returns `None` — not a `VerifyResult` with `verified=False`. Attribution to your account could not be shown; this is not proof that the vector belongs to anyone else. It is a normal result and counts as one verification.

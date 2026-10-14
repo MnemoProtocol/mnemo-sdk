@@ -54,8 +54,8 @@ reflects the verdict the API returned.
 - **Offline operation.** The SDK requires network access to the Mnemo
   API. There is no local verification path.
 - **Retroactive coverage.** Only vectors that were embedded through
-  the Mnemo API can be verified. Pre-existing embeddings cannot be
-  identified after the fact.
+  the Mnemo API can be verified. Embeddings created outside Mnemo
+  cannot be verified after the fact.
 - **Robustness under aggressive transforms.** Verification is
   best-effort under significant noise injection, large-scale
   dimensionality reduction, adversarial perturbation, or any

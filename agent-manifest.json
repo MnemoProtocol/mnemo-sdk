@@ -117,7 +117,7 @@
       "MnemoException", "MnemoAPIError",
       "MnemoValidationError", "MnemoErrorCode"
     ],
-    "private": "All algorithm, key derivation, and detection logic is server-side only"
+    "private": "All watermarking and verification logic is server-side only"
   },
 
   "legal": {

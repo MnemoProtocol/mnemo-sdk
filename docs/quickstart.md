@@ -103,7 +103,7 @@ https://github.com/MnemoProtocol/mnemo-agent-protocol.
 
 ## Using Policies
 
-Policies attach values such as lifetime and region at embed time. Verify's `policy_ok` reflects at most the TTL; `usage_class`, `retention` and `region` are passed through but not evaluated by verify:
+Policies attach values such as a TTL and a region at embed time. Verify's `policy_ok` reflects at most the TTL; `usage_class`, `retention` and `region` are passed through but not evaluated by verify:
 
 ```python
 from mnemo_sdk import create_policy

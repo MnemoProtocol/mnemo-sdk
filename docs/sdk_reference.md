@@ -228,7 +228,7 @@ class PolicyConfig:
 
 | Field         | Type  | Default | Description                            |
 |---------------|-------|---------|----------------------------------------|
-| `ttl_hours`   | `int` | `720`   | Watermark time-to-live in hours.       |
+| `ttl_hours`   | `int` | `720`   | Time-to-live in hours; verify's `policy_ok` is false after it elapses. |
 | `usage_class` | `str` | `"std"` | Usage class, passed through to the server. |
 | `retention`   | `str` | `"hot"` | Retention value, passed through to the server. |
 | `region`      | `str` | `"us"`  | Region value, passed through to the server. |
@@ -252,8 +252,8 @@ Fluent builder for constructing policy configuration dictionaries.
 | `ttl_hours(hours: int)`        | `PolicyBuilder`  | Set TTL in hours.                        |
 | `ttl_days(days: int)`          | `PolicyBuilder`  | Set TTL in days (converted to hours).    |
 | `usage_class(cls: str)`        | `PolicyBuilder`  | Set the usage class.                     |
-| `retention(retention: str)`    | `PolicyBuilder`  | Set the retention tier.                  |
-| `region(region: str)`          | `PolicyBuilder`  | Set the deployment region.               |
+| `retention(retention: str)`    | `PolicyBuilder`  | Set the retention value (passed through to the server; not evaluated by verify). |
+| `region(region: str)`          | `PolicyBuilder`  | Set the region value (passed through to the server; not evaluated by verify). |
 | `build()`                      | `dict`           | Build and return the policy dictionary.  |
 
 ### Example
