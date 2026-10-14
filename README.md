@@ -6,6 +6,14 @@
 
 **What it is:** Mnemo is an HTTP API for embedding vectors. `embed()` returns a measurably perturbed watermarked copy and a `vector_uid`; store and use that copy. `verify()` checks whether a vector you submit resolves to an object registered to your account. Not a vector database. This SDK covers the **API-key path only** (`X-API-Key`, subscription plan, never x402); it does not implement accountless namespaces, lineage or x402 payments.
 
+**Provenance:** in Mnemo, provenance means this exact `vector_uid` was issued by Mnemo at embed time and is still attributable to the account or namespace that issued it. It is not similarity: a nearest-neighbour search can say a vector is close to something, not whether a vector you hold was issued by your own pipeline. Verify answers that narrower question.
+
+**Use it when** you produce or store embeddings and later need to check whether a vector you hold (for example one returned by retrieval) was issued to your own account, or need to record and read a verified parent-to-child derivation.
+
+**Not for:** vectors never embedded through Mnemo (there is no retroactive coverage); vectors issued to another account or namespace (verify cannot check another party's vectors); similarity search or storage; judging truth, authorship, ownership or the source model; file or document authenticity.
+
+**Lineage (HTTP API, not in this SDK):** an embed may name one parent you own; Mnemo verifies the parent before it creates the child. `GET /v1/lineage/{vector_uid}` (with your `X-API-Key`, or a namespace capability) re-verifies every link on each read and returns the chain, or `409` when a link no longer verifies. Lineage records which parent you named, not what the transformation did. See §7 of the [agent protocol](https://www.trymnemo.com/agent-protocol.md).
+
 ```bash
 pip install mnemo-protocol
 ```
@@ -32,6 +40,8 @@ if check is None:
 else:
     print("verified:", check.vector_uid, check.confidence)
 ```
+
+`verify()` returns a `VerifyResult` (`verified`, `confidence`, `vector_uid`, `policy_ok`, `signals`) when the API answers `verified: true`, and `None` when it answers `verified: false`. Decide on that, not on `confidence` or `policy_ok`.
 
 **What verify checks:** Mnemo Verify checks whether a submitted vector resolves to an object registered to the caller's Mnemo account or namespace; with this SDK the caller is your account. `verify()` returns `None` when the API answers `verified: false`: attribution to your account could not be shown, which is not proof that the vector belongs to anyone else. Mnemo does not establish truth, authorship, ownership or the source model of a vector ([Guarantees and Limitations](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/GUARANTEES.md)).
 
