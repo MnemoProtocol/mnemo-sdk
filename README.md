@@ -6,7 +6,7 @@
 
 **What it is:** Mnemo is an HTTP API for embedding vectors. `embed()` returns a measurably perturbed watermarked copy and a `vector_uid`; store and use that copy. `verify()` checks whether a vector you submit resolves to an object registered to your account. Not a vector database. This SDK covers the **API-key path only** (`X-API-Key`, subscription plan, never x402); it does not implement accountless namespaces, lineage or x402 payments.
 
-**Provenance:** in Mnemo, provenance means this exact `vector_uid` was issued by Mnemo at embed time and is still attributable to the account or namespace that issued it. It is not similarity: a nearest-neighbour search can say a vector is close to something, not whether a vector you hold was issued by your own pipeline. Verify answers that narrower question.
+**Provenance:** in Mnemo, provenance means a vector resolves to a `vector_uid` that Mnemo issued at embed time and that is still attributable to the account or namespace that issued it. It is not similarity: a nearest-neighbour search can say a vector is close to something, not whether a vector you hold was issued by your own pipeline. Verify answers that narrower question.
 
 **Use it when** you produce or store embeddings and later need to check whether a vector you hold (for example one returned by retrieval) was issued to your own account, or need to record and read a verified parent-to-child derivation.
 
