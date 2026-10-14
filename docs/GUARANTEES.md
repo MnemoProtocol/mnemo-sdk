@@ -8,8 +8,8 @@
 ## What the SDK does
 
 The Mnemo SDK is a thin client for the Mnemo watermarking API. It does
-not perform watermarking or verification locally. All cryptographic and
-detection work happens server-side; the SDK forwards vectors and
+not perform watermarking or verification locally. All watermarking and
+verification work happens server-side; the SDK forwards vectors and
 returns the API's response.
 
 ## What the API returns
@@ -60,7 +60,7 @@ reflects the verdict the API returned.
   best-effort under significant noise injection, large-scale
   dimensionality reduction, adversarial perturbation, or any
   transformation specifically designed to defeat watermarking.
-  Detection in those regimes is not guaranteed.
+  A vector you embedded may not verify after such transforms.
 - **Tamper resistance.** Mnemo provides traceability for normal data
   pipelines, not cryptographic resistance against a motivated
   adversary with full knowledge of the system.
@@ -74,8 +74,9 @@ Confidence scores returned by the API are intended as a relative
 signal, not a probability. Applications that need a hard accept/reject
 decision should pair the verdict with their own threshold appropriate
 to their use case. When `verify()` returns `None`, treat the vector as
-not verified for your account — do not infer the absence of a
-watermark with certainty from a single call.
+not verified for your account. `None` does not show that the vector
+carries no watermark, and it does not show that the vector belongs to
+anyone else.
 
 ## Right to modify
 

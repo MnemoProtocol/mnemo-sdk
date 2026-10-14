@@ -9,6 +9,8 @@ Documentation and package metadata only. No API or behavior changes and no code 
 - `docs/GUARANTEES.md`: `policy_ok` reflects at most the TTL set at embed time; `usage_class`, `retention` and `region` are not evaluated by verify.
 - Package metadata: new summary, keywords, Audience/OS/Topic classifiers, and project URLs for Documentation (GitHub `docs/`), Source, Issues, Security, Changelog and License. License expression unchanged (`LicenseRef-Mnemo-SDK-2.0`).
 - `llms.txt`: same identity note and verify-scope wording as the README.
+- `docs/GUARANTEES.md`: "detection" wording replaced; `None` does not show that a vector carries no watermark or belongs to anyone else.
+- `context7.json` (repository-only, not packaged): points Context7 indexing at the README, `docs/` and `examples/`, and lists usage rules (install and import names, `X-API-Key`, `verify()` returning `None`, what verify checks).
 
 ## 3.1.2 (2026-10-12)
 
