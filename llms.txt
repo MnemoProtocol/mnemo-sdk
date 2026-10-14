@@ -1,13 +1,15 @@
 # Mnemo Python SDK (mnemo-protocol)
 
-> Python client for the Mnemo API. Mnemo gives embedding vectors a verifiable identity: embed a vector to get a watermarked copy and a `vector_uid`; verify any vector to learn whether it is one of yours. The SDK authenticates with an account API key and uses that account's subscription plan. It does not implement accountless agent namespaces or x402 payments.
+> Python client for the Mnemo API (PyPI `mnemo-protocol`, imported as `mnemo_sdk`). Mnemo gives embedding vectors a verifiable identity: embed a vector to get a measurably perturbed watermarked copy and a `vector_uid` (store that copy); verify checks whether a submitted vector resolves to an object registered to your own Mnemo account. The SDK authenticates with an account API key and uses that account's subscription plan. It does not implement accountless agent namespaces or x402 payments.
+
+Mnemo here is the embedding-vector provenance API at trymnemo.com (GitHub MnemoProtocol; PyPI mnemo-protocol, imported as mnemo_sdk). It is not the unrelated PyPI packages mnemo, mnemo-sdk, mnemo-ai or mnemo-mcp, and not an AI-memory app or MCP server.
 
 API base: https://api.trymnemo.com
 
 ## Core operations
 
 - `embed(vector, model_id, *, model_version="1.0", policy=None, subject=None)` → `POST /v1/embed`. Returns `vector_uid`, `watermarked_vector`, `created_at`, `dimensions`, and `subject_proof` (only when a `subject` was supplied and the server-side subject-proof transport is enabled and configured).
-- `verify(vector, *, subject_proof=None)` → `POST /v1/verify`. Returns a `VerifyResult` (`verified`, `confidence`, `vector_uid`, `policy_ok`, optional `signals`) when a watermark is detected, otherwise `None`.
+- `verify(vector, *, subject_proof=None)` → `POST /v1/verify`. Returns a `VerifyResult` (`verified`, `confidence`, `vector_uid`, `policy_ok`, optional `signals`) when the API answers `verified: true` (the vector resolves to an object registered to your account), otherwise `None` (attribution to your account could not be shown; not proof that the vector belongs to anyone else).
 - `health()` → `GET /v1/health` (no auth required). Returns `status`, `version`, `timestamp`.
 - `usage()` → `GET /v1/usage`. Returns `embed_count`, `verify_count`, `period` (`YYYY-MM`), `tier`, `embed_limit`, `verify_limit`.
 

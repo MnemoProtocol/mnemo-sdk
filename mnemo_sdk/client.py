@@ -18,7 +18,7 @@ from mnemo_sdk.types import (
     VerifySignals,
 )
 
-_SDK_VERSION = "3.1.2"
+_SDK_VERSION = "3.1.3"
 _USER_AGENT = f"mnemo-protocol/{_SDK_VERSION} python"
 
 # Service-set fields the client may NEVER supply on a subject; a subject carrying

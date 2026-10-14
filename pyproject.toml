@@ -4,15 +4,27 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mnemo-protocol"
-version = "3.1.2"
-description = "Python SDK for the Mnemo watermarking API"
+version = "3.1.3"
+description = "Python client for the Mnemo API: watermark embedding vectors and verify whether a vector was issued to your own account (API key). Import as mnemo_sdk."
 license = "LicenseRef-Mnemo-SDK-2.0"
 license-files = ["LICENSE"]
 readme = "README.md"
 requires-python = ">=3.9"
 authors = [{ name = "Mnemo LLC" }]
+keywords = [
+    "embeddings",
+    "embedding vectors",
+    "vector provenance",
+    "embedding provenance",
+    "vector watermarking",
+    "rag",
+    "mnemo",
+    "trymnemo",
+]
 dependencies = ["requests>=2.28"]
 classifiers = [
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.9",
@@ -20,6 +32,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
 [project.optional-dependencies]
@@ -28,9 +42,11 @@ dev = ["pytest>=7.4", "requests-mock>=1.11"]
 
 [project.urls]
 Homepage = "https://www.trymnemo.com"
-Documentation = "https://github.com/MnemoProtocol/mnemo-sdk/tree/main/docs"
-Repository = "https://github.com/MnemoProtocol/mnemo-sdk"
+Documentation = "https://www.trymnemo.com/docs/sdk"
+Source = "https://github.com/MnemoProtocol/mnemo-sdk"
 Issues = "https://github.com/MnemoProtocol/mnemo-sdk/issues"
+Security = "https://github.com/MnemoProtocol/mnemo-sdk/blob/main/SECURITY.md"
+Changelog = "https://github.com/MnemoProtocol/mnemo-sdk/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["mnemo_sdk"]
