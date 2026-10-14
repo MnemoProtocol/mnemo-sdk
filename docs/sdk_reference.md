@@ -49,7 +49,7 @@ Embed a watermark into a vector via `POST /v1/embed`.
 
 #### `verify(vector, *, subject_proof=None, idempotency_key=None) -> Optional[VerifyResult]`
 
-Verify a vector for a Mnemo watermark via `POST /v1/verify`.
+Check whether a vector resolves to an object registered to your Mnemo account via `POST /v1/verify`.
 
 | Parameter       | Type                        | Description                         |
 |-----------------|-----------------------------|-------------------------------------|
@@ -57,7 +57,7 @@ Verify a vector for a Mnemo watermark via `POST /v1/verify`.
 | `idempotency_key` | `Optional[str]` | Sent as the `Idempotency-Key` header. When omitted, the SDK generates a uuid4 for this call. Either way the value is resolved once per call and sent unchanged on every internal retry of that call. An empty or non-string key raises `MnemoValidationError` before any request. |
 | `subject_proof` | `Optional[SubjectProof \| dict]` | Optional **opaque** proof token from a prior `embed`, issued and checked by the service. The SDK transports it verbatim and never validates or interprets it. The service decides when it is used. |
 
-**Returns:** `VerifyResult` when a watermark is detected (with `signals` populated when the server returns the diagnostic block), otherwise `None`.
+**Returns:** `VerifyResult` when the API answers `verified: true` (with `signals` populated when the server returns the diagnostic block); `None` when it answers `verified: false` (attribution to your account could not be shown; not proof that the vector belongs to anyone else; counts as one verification).
 
 **Billing:** with an API key, each verification counts against the account plan's included monthly verifications (no automatic overage, no top-ups, never x402). When they are used up the server answers `402 {"code": "insufficient_credits"}` without `PAYMENT-REQUIRED`, raised as `MnemoAPIError` (`status_code=402`, `code=MnemoErrorCode.QUOTA_EXCEEDED`, `details={"code": "insufficient_credits"}`). The `Idempotency-Key` sent on every attempt of a call means an internal retry after a lost response is not counted again.
 
@@ -113,8 +113,8 @@ class EmbedResult:
 
 | Field                | Type             | Description                                  |
 |----------------------|------------------|----------------------------------------------|
-| `vector_uid`         | `str`            | Unique identifier for the watermark.         |
-| `watermarked_vector` | `list[float]`    | The watermarked vector.                      |
+| `vector_uid`         | `str`            | Unique identifier for this embed.            |
+| `watermarked_vector` | `list[float]`    | The watermarked vector: a measurably perturbed copy of the input. |
 | `created_at`         | `str`            | ISO 8601 timestamp of creation.              |
 | `dimensions`         | `int`            | Number of dimensions in the vector.          |
 | `subject_proof`      | `Optional[SubjectProof]` | Server-issued subject-proof carrier; present only when a `subject` was supplied AND the server-side transport is enabled+configured, else `None`. Opaque/untrusted — store it and replay on `verify`. |
@@ -143,10 +143,10 @@ class VerifyResult:
 
 | Field        | Type            | Description                                      |
 |--------------|-----------------|--------------------------------------------------|
-| `verified`   | `bool`          | Always `True` (a result is returned only on detection). |
-| `confidence` | `float`         | Confidence score between 0.0 and 1.0.            |
-| `vector_uid` | `str`           | The watermark UID.                               |
-| `policy_ok`  | `bool`          | Whether the watermark policy is still valid.     |
+| `verified`   | `bool`          | Always `True` (a result is returned only when the API answers `verified: true`). |
+| `confidence` | `float`         | Relative confidence signal, not a probability (see GUARANTEES.md). |
+| `vector_uid` | `str`           | `vector_uid` of the matched object.              |
+| `policy_ok`  | `bool`          | Reflects at most the TTL set at embed time.                                         |
 | `signals`    | `Optional[VerifySignals]` | Optional diagnostic signals returned by the service; values are informational and may change. `None` if the server omits it. |
 
 ---
@@ -228,7 +228,7 @@ class PolicyConfig:
 
 | Field         | Type  | Default | Description                            |
 |---------------|-------|---------|----------------------------------------|
-| `ttl_hours`   | `int` | `720`   | Watermark time-to-live in hours.       |
+| `ttl_hours`   | `int` | `720`   | Time-to-live in hours; verify's `policy_ok` is false after it elapses. |
 | `usage_class` | `str` | `"std"` | Usage class, passed through to the server. |
 | `retention`   | `str` | `"hot"` | Retention value, passed through to the server. |
 | `region`      | `str` | `"us"`  | Region value, passed through to the server. |
@@ -252,8 +252,8 @@ Fluent builder for constructing policy configuration dictionaries.
 | `ttl_hours(hours: int)`        | `PolicyBuilder`  | Set TTL in hours.                        |
 | `ttl_days(days: int)`          | `PolicyBuilder`  | Set TTL in days (converted to hours).    |
 | `usage_class(cls: str)`        | `PolicyBuilder`  | Set the usage class.                     |
-| `retention(retention: str)`    | `PolicyBuilder`  | Set the retention tier.                  |
-| `region(region: str)`          | `PolicyBuilder`  | Set the deployment region.               |
+| `retention(retention: str)`    | `PolicyBuilder`  | Set the retention value (passed through to the server; not evaluated by verify). |
+| `region(region: str)`          | `PolicyBuilder`  | Set the region value (passed through to the server; not evaluated by verify). |
 | `build()`                      | `dict`           | Build and return the policy dictionary.  |
 
 ### Example

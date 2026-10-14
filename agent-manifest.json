@@ -3,7 +3,7 @@
   "name": "Mnemo Python SDK",
   "package": "mnemo-protocol",
   "version": "3.1.2",
-  "description": "Python client for the Mnemo API: watermark embedding vectors and verify them later. Authenticates with an account API key; does not implement accountless agent namespaces or x402 payments.",
+  "description": "Python client for the Mnemo API: get a measurably perturbed watermarked copy of an embedding vector, then check whether a vector resolves to an object registered to your Mnemo account. Authenticates with an account API key; does not implement accountless agent namespaces or x402 payments.",
   "homepage": "https://www.trymnemo.com",
   "api_base": "https://api.trymnemo.com",
   "repository": "https://github.com/MnemoProtocol/mnemo-sdk",
@@ -37,7 +37,7 @@
       "name": "verify",
       "method": "POST",
       "path": "/v1/verify",
-      "description": "Verify watermark on a vector. Returns verified status, confidence score, and original vector_uid. Optionally accepts an opaque subject_proof carrier (server-verified). The SDK returns None when no watermark is detected.",
+      "description": "Checks whether a vector resolves to an object registered to your Mnemo account. Returns verified status, confidence and vector_uid. Optionally accepts an opaque subject_proof carrier (server-verified). The SDK returns None when the API answers verified=false (attribution to your account could not be shown).",
       "required_params": ["vector"],
       "optional_params": ["subject_proof"],
       "returns": ["verified", "confidence", "vector_uid", "policy_ok", "signals"],
@@ -117,7 +117,7 @@
       "MnemoException", "MnemoAPIError",
       "MnemoValidationError", "MnemoErrorCode"
     ],
-    "private": "All algorithm, key derivation, and detection logic is server-side only"
+    "private": "All watermarking and verification logic is server-side only"
   },
 
   "legal": {

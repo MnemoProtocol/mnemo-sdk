@@ -22,13 +22,13 @@ result = client.embed(
     vector=vector,
     model_id="text-embedding-3-small",
 )
-print(f"Watermark UID: {result.vector_uid}")
+print(f"Vector UID:    {result.vector_uid}")
 print(f"Dimensions:    {result.dimensions}")
 
 # Verify the watermarked vector
 check = client.verify(vector=result.watermarked_vector)
 if check is None:
-    print("No watermark detected.")
+    print("Not verified for this account (a normal result; counts as one verification).")
 else:
     print(f"Verified:      {check.verified}")
     print(f"Confidence:    {check.confidence}")

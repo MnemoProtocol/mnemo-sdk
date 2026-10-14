@@ -22,7 +22,7 @@ def sample_vector(dims: int = 768):
 # --- Option 1: create_policy convenience function ---
 
 policy = create_policy(
-    ttl_hours=168,        # 7-day watermark lifetime
+    ttl_hours=168,        # 7-day TTL (policy_ok becomes false after it)
     usage_class="std",
     retention="hot",
     region="us",

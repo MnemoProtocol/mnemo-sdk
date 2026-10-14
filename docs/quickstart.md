@@ -1,6 +1,6 @@
 # Quickstart Guide
 
-This guide shows how to use the Mnemo SDK to embed and verify watermarks via the Mnemo HTTP API.
+This guide shows how to use the Mnemo SDK to watermark embedding vectors and check them against your account via the Mnemo HTTP API.
 
 ## Prerequisites
 
@@ -29,7 +29,7 @@ client = MnemoClient(api_key="your-api-key", api_url="https://custom.endpoint.ex
 
 ## Step 2: Embed a Watermark
 
-Send a `POST /v1/embed` request to embed an invisible watermark into a vector. Vectors must have 512–4096 finite numbers:
+Send a `POST /v1/embed` request to get a measurably perturbed watermarked copy of a vector. Vectors must have 512–4096 finite numbers:
 
 ```python
 import random
@@ -41,31 +41,31 @@ result = client.embed(
     model_id="text-embedding-3-small",
 )
 
-print(result.vector_uid)           # Unique watermark identifier
+print(result.vector_uid)           # Unique identifier for this embed
 print(result.watermarked_vector)   # The watermarked vector (same dimensionality)
 print(result.dimensions)           # Number of dimensions
 print(result.created_at)           # Timestamp
 ```
 
-The returned `watermarked_vector` is a drop-in replacement for the original. Store it in your vector database as you normally would.
+The returned `watermarked_vector` is a measurably perturbed copy of the original. Store it in your vector database in place of the original, and check retrieval quality on your own data before switching over.
 
 ## Step 3: Verify a Vector
 
-Send a `POST /v1/verify` request to check whether a vector contains a Mnemo watermark:
+Send a `POST /v1/verify` request to check whether a vector resolves to an object registered to your Mnemo account:
 
 ```python
 check = client.verify(vector=result.watermarked_vector)
 
 if check is None:
-    print("No watermark detected.")
+    print("not verified for this account")
 else:
     print(check.verified)    # Always True when a result is returned
-    print(check.confidence)  # Confidence score (0.0 to 1.0)
-    print(check.vector_uid)  # The watermark UID
-    print(check.policy_ok)   # Whether the watermark policy is still valid
+    print(check.confidence)  # Relative confidence signal, not a probability
+    print(check.vector_uid)  # vector_uid of the matched object
+    print(check.policy_ok)   # Reflects at most the TTL set at embed time
 ```
 
-`verify()` returns `None` when no watermark is detected.
+`verify()` returns `None` when the API answers `verified: false`: attribution to your account could not be shown, which is not proof that the vector belongs to anyone else. It is a normal result, not an error, and it counts as one verification.
 
 ## Step 4: Check Service Health
 
@@ -103,7 +103,7 @@ https://github.com/MnemoProtocol/mnemo-agent-protocol.
 
 ## Using Policies
 
-Policies let you control watermark behavior such as lifetime and region:
+Policies attach values such as a TTL and a region at embed time. Verify's `policy_ok` reflects at most the TTL; `usage_class`, `retention` and `region` are passed through but not evaluated by verify:
 
 ```python
 from mnemo_sdk import create_policy
@@ -145,8 +145,8 @@ The client automatically retries on HTTP 429 (rate limit) responses, using the `
 
 | Method | Endpoint           | Description                    |
 |--------|--------------------|--------------------------------|
-| POST   | `/v1/embed`        | Embed a watermark              |
-| POST   | `/v1/verify`       | Verify a vector                |
+| POST   | `/v1/embed`        | Get a watermarked copy         |
+| POST   | `/v1/verify`       | Check a vector against your account |
 | GET    | `/v1/health`       | Service health check (no auth) |
 | GET    | `/v1/usage`        | Account usage statistics       |
 

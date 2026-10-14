@@ -189,7 +189,8 @@ class VerifySignals:
 class VerifyResult:
     """Result returned from a successful verify operation.
 
-    Only returned when a watermark is detected (verified == True).
+    Only returned when the API answers verified=true; ``verify()`` returns
+    None when the API answers verified=false.
     """
 
     verified: bool

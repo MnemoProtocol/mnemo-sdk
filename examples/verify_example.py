@@ -3,8 +3,8 @@
 # Use of the Mnemo Services is governed by https://www.trymnemo.com/terms.
 """Mnemo SDK verification example.
 
-Shows how to verify whether a vector contains a Mnemo watermark
-and interpret the result.
+Shows how to check whether a vector resolves to an object registered to
+your Mnemo account, and how to interpret the result.
 """
 
 import random
@@ -31,7 +31,7 @@ except MnemoAPIError as exc:
     raise
 
 if result is None:
-    print("No watermark detected in this vector.")
+    print("Not verified for this account (a normal result; counts as one verification).")
 else:
     print(f"Verified:    {result.verified}")
     print(f"Confidence:  {result.confidence}")
@@ -39,6 +39,6 @@ else:
     print(f"Policy OK:   {result.policy_ok}")
 
     if result.confidence > 0.9:
-        print("High-confidence watermark detected.")
+        print("Verified for this account; confidence above this example's 0.9 threshold.")
     else:
-        print("Watermark detected with moderate confidence.")
+        print("Verified for this account; confidence at or below this example's 0.9 threshold.")

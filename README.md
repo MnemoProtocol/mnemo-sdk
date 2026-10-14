@@ -1,45 +1,62 @@
-# Mnemo SDK
+# Mnemo SDK (Python)
 
-**Invisible, verifiable watermarks for AI-generated embeddings.**
+**Official Python client for the Mnemo API (`https://api.trymnemo.com`): watermark embedding vectors, then check whether a vector resolves to an object registered to your own Mnemo account.**
 
-`mnemo-protocol` is the Python client for the Mnemo API (`https://api.trymnemo.com`). It lets you embed invisible watermarks into embedding vectors and verify them later, with no changes to your model or downstream pipeline. All watermarking runs server-side; the SDK contains no algorithm code.
+**Identity:** Mnemo here is the embedding-vector provenance API at trymnemo.com (GitHub [MnemoProtocol](https://github.com/MnemoProtocol); PyPI [mnemo-protocol](https://pypi.org/project/mnemo-protocol/), imported as mnemo_sdk). It is not the unrelated PyPI packages mnemo, mnemo-sdk, mnemo-ai or mnemo-mcp, and not an AI-memory app or MCP server.
 
-The SDK authenticates with an **account API key** (`X-API-Key`). It does not implement accountless agent namespaces or x402 payments — see [Agents without an account](#agents-without-an-account).
+**What it is:** Mnemo is an HTTP API for embedding vectors. `embed()` returns a measurably perturbed watermarked copy and a `vector_uid`; store and use that copy. `verify()` checks whether a vector you submit resolves to an object registered to your account. Not a vector database. This SDK covers the **API-key path only** (`X-API-Key`, subscription plan, never x402); it does not implement accountless namespaces, lineage or x402 payments.
 
-## Installation
+**Provenance:** in Mnemo, provenance means a vector resolves to a `vector_uid` that Mnemo issued at embed time and that is still attributable to the account or namespace that issued it. It is not similarity: a nearest-neighbour search can say a vector is close to something, not whether a vector you hold was issued by your own pipeline. Verify answers that narrower question.
+
+**Use it when** you produce or store embeddings and later need to check whether a vector you hold (for example one returned by retrieval) was issued to your own account, or need to record and read a verified parent-to-child derivation.
+
+**Not for:** vectors never embedded through Mnemo (there is no retroactive coverage); vectors issued to another account or namespace (verify cannot check another party's vectors); similarity search or storage; judging truth, authorship, ownership or the source model; file or document authenticity.
+
+**Lineage (HTTP API, not in this SDK):** an embed may name one parent you own; Mnemo verifies the parent before it creates the child. `GET /v1/lineage/{vector_uid}` (with your `X-API-Key`, or a namespace capability) re-verifies every link on each read and returns the chain, or `409` when a link no longer verifies. Lineage records which parent you named, not what the transformation did. See §7 of the [agent protocol](https://www.trymnemo.com/agent-protocol.md).
 
 ```bash
 pip install mnemo-protocol
 ```
 
-The package is `mnemo-protocol` on PyPI and is imported as `mnemo_sdk`. The unrelated PyPI projects `mnemo-sdk` and `mnemo-ai` are not Mnemo's.
+```python
+import os
+import random
+
+from mnemo_sdk import MnemoClient
+
+client = MnemoClient(api_key=os.environ["MNEMO_API_KEY"])  # account API key, sent as X-API-Key
+
+# Stand-in for your real embedding: 512–4096 finite numbers.
+vector = [random.uniform(-1.0, 1.0) for _ in range(768)]
+
+result = client.embed(vector=vector, model_id="text-embedding-3-small")
+# Store result.watermarked_vector in place of `vector`, and keep result.vector_uid.
+
+check = client.verify(vector=result.watermarked_vector)
+if check is None:
+    # A normal result, not an error, and it counts as one verification:
+    # attribution to this account could not be shown.
+    print("not verified for this account")
+else:
+    print("verified:", check.vector_uid, check.confidence)
+```
+
+`verify()` returns a `VerifyResult` (`verified`, `confidence`, `vector_uid`, `policy_ok`, `signals`) when the API answers `verified: true`, and `None` when it answers `verified: false`. Decide on that, not on `confidence` or `policy_ok`.
+
+**What verify checks:** Mnemo Verify checks whether a submitted vector resolves to an object registered to the caller's Mnemo account or namespace; with this SDK the caller is your account. `verify()` returns `None` when the API answers `verified: false`: attribution to your account could not be shown, which is not proof that the vector belongs to anyone else. Mnemo does not establish truth, authorship, ownership or the source model of a vector ([Guarantees and Limitations](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/GUARANTEES.md)).
+
+**Links:** [SDK docs](https://github.com/MnemoProtocol/mnemo-sdk/tree/main/docs) · [OpenAPI 3.1](https://www.trymnemo.com/openapi.json) (HTTP contract, incl. `/v1/embed` and `/v1/verify` with `X-API-Key`) · [Agent protocol](https://github.com/MnemoProtocol/mnemo-agent-protocol) (accountless agents, x402) · [PyPI](https://pypi.org/project/mnemo-protocol/) · [Terms of Service](https://www.trymnemo.com/terms) · API keys: a person signs in at https://www.trymnemo.com/login · Plans: https://www.trymnemo.com/pricing
+
+**License:** Mnemo SDK License v2.0 (proprietary; [LICENSE](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE)); see the License and Legal sections below.
+
+## Installation
+
+Install with `pip install mnemo-protocol` (shown above). The package is `mnemo-protocol` on PyPI and is imported as `mnemo_sdk`.
 
 To use numpy helpers (e.g. `EmbedResult.to_numpy()`):
 
 ```bash
 pip install "mnemo-protocol[numpy]"
-```
-
-## Quick Start
-
-```python
-import random
-
-from mnemo_sdk import MnemoClient
-
-client = MnemoClient(api_key="your-api-key")
-
-# Stand-in for a real embedding. Vectors must have 512–4096 finite numbers.
-vector = [random.uniform(-1.0, 1.0) for _ in range(768)]
-
-# Embed a watermark
-result = client.embed(vector=vector, model_id="text-embedding-3-small")
-print(result.vector_uid)
-
-# Verify a watermark — returns a VerifyResult, or None when nothing is detected
-check = client.verify(vector=result.watermarked_vector)
-if check is not None:
-    print(check.verified, check.confidence, check.vector_uid)
 ```
 
 ## What the SDK calls
@@ -72,7 +89,7 @@ There is no public MCP server in v1; use the HTTP API.
 ## Features
 
 - **Embed** watermarks into floating-point vectors (512–4096 dimensions).
-- **Verify** whether a vector carries a Mnemo watermark and retrieve its `vector_uid`.
+- **Verify** whether a vector resolves to an object registered to your Mnemo account, and retrieve its `vector_uid`.
 - **Trusted subject binding** (optional) — attach subject context at embed time and replay a server-issued proof at verify time.
 - **Policy configuration** passed through to the server on embed.
 - **Automatic retries** on rate limits (`429`, honouring `Retry-After`), connection errors and timeouts.

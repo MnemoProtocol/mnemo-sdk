@@ -1,0 +1,20 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "Mnemo Python SDK (mnemo-protocol)",
+  "description": "Python client for the Mnemo API: watermark embedding vectors and verify whether a vector was issued to your own account (API key). Import as mnemo_sdk.",
+  "folders": ["docs", "examples"],
+  "excludeFolders": ["mnemo_sdk", "tests"],
+  "excludeFiles": ["CHANGELOG.md", "TERMS.md"],
+  "rules": [
+    "Install with `pip install mnemo-protocol` and import with `from mnemo_sdk import MnemoClient`. The PyPI packages mnemo, mnemo-sdk, mnemo-ai and mnemo-mcp are unrelated to Mnemo.",
+    "Authenticate with an account API key: `MnemoClient(api_key=...)` sends it as the `X-API-Key` header to https://api.trymnemo.com. API-key calls use the account's subscription plan, never x402.",
+    "`embed(vector, model_id)` takes 512-4096 finite floats and returns an EmbedResult. Store and use `result.watermarked_vector` (a measurably perturbed watermarked copy) and keep `result.vector_uid`.",
+    "`verify(vector)` returns a VerifyResult when the vector is verified and `None` when it is not verified. `None` is a normal result, not an error, and counts as one verification. Always handle the `None` branch.",
+    "Mnemo Verify checks whether a submitted vector resolves to an object registered to the caller's Mnemo account or namespace. `None` means attribution to your account could not be shown, not that the vector belongs to anyone else.",
+    "Do not use verify to establish truth, authorship, ownership or the source model of a vector, or to check vectors that were not embedded through Mnemo under your own account.",
+    "Treat `confidence` as a relative signal, not a probability. The SDK calls only POST /v1/embed, POST /v1/verify, GET /v1/health and GET /v1/usage; do not invent other endpoints or batch methods.",
+    "When the plan's verifications are used up, verify raises MnemoAPIError with status_code 402 and code MnemoErrorCode.QUOTA_EXCEEDED. There is nothing to pay from the SDK.",
+    "`subject_proof` is an opaque token issued by the service: store it and pass it back to verify unchanged. Never parse, construct or validate it client-side.",
+    "Agents without an account do not use this SDK; they call the Mnemo Agent API over HTTP (accountless namespaces, lineage, x402). See https://github.com/MnemoProtocol/mnemo-agent-protocol."
+  ]
+}
