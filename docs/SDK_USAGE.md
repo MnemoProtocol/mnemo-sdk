@@ -4,7 +4,7 @@
 
 ### `client.embed(vector, model_id, ...)`
 
-Embeds an invisible watermark into a vector and returns a tracked result.
+Returns a measurably perturbed watermarked copy of the vector and a tracked result.
 
 **Parameters:**
 - `vector` — list of floats (your embedding; 512–4096 finite numbers)
@@ -33,13 +33,13 @@ result = client.embed([0.1, -0.3, 0.5, ...], model_id="text-embedding-3-small")
 
 ### `client.verify(vector)`
 
-Attempts to identify a watermarked vector.
+Checks whether a vector resolves to an object registered to your Mnemo account.
 
 **Parameters:**
 - `vector` — list of floats to verify (512–4096 finite numbers)
 - `subject_proof` — optional carrier from a prior `embed()` (see below)
 
-**Returns:** `VerifyResult` if identified, `None` if not.
+**Returns:** `VerifyResult` when the API answers `verified: true`, `None` when it answers `verified: false`.
 
 ```python
 result = client.verify(some_vector)
@@ -52,11 +52,11 @@ if result is not None:
 | Field | Type | Description |
 |-------|------|-------------|
 | `verified` | `bool` | Always `True` when a result is returned |
-| `confidence` | `float` | Confidence score (0.0 to 1.0) |
+| `confidence` | `float` | Relative confidence signal, not a probability (see GUARANTEES.md) |
 | `vector_uid` | `str` | The identified vector's UID |
-| `policy_ok` | `bool` | Whether the vector's access policy is satisfied |
+| `policy_ok` | `bool` | Reflects at most the TTL set at embed time |
 
-When verification fails, `verify()` returns `None` — not a `VerifyResult` with `verified=False`.
+When the API answers `verified: false`, `verify()` returns `None` — not a `VerifyResult` with `verified=False`. Attribution to your account could not be shown; this is not proof that the vector belongs to anyone else. It is a normal result and counts as one verification.
 
 `VerifyResult` may also carry an optional `signals` block: diagnostic signals
 returned by the service; values are informational and may change.

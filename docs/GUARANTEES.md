@@ -15,31 +15,39 @@ returns the API's response.
 ## What the API returns
 
 ### Embed
-A successful embed call returns a watermarked vector, a `vector_uid`
-that identifies the embedding event, a creation timestamp, and the
-vector dimensionality. The watermarked vector can be stored and used
-in place of the original embedding.
+A successful embed call returns a measurably perturbed watermarked
+copy of the input vector, a `vector_uid` that identifies the embedding
+event, a creation timestamp, and the vector dimensionality. Store and
+use the watermarked copy in place of the original embedding.
 
 ### Verify
-A verify call returns either:
+Mnemo Verify checks whether a submitted vector resolves to an object
+registered to the caller's Mnemo account or namespace; with this SDK
+the caller is your account. `verify()` returns either:
 
-- A `VerifyResult` containing `verified=True`, a confidence score, the
-  matched `vector_uid`, and a `policy_ok` flag indicating whether the
-  vector is being used within the policy bounds set at embed time, or
-- `None`, indicating that no Mnemo watermark was detected.
+- A `VerifyResult` (the API answered `verified=true`) containing
+  `verified=True`, a confidence value, the matched `vector_uid`, and a
+  `policy_ok` flag. `policy_ok` reflects at most the TTL set at embed
+  time; it does not evaluate usage class, retention or region.
+- `None` (the API answered `verified=false`): attribution to your
+  account could not be shown; this is not proof the vector belongs to
+  anyone else. It is a normal result, not an error, and it counts as
+  one verification.
 
-The SDK never decides on its own whether a vector is watermarked. It
+The SDK never decides on its own whether a vector verifies. It
 reflects the verdict the API returned.
 
 ## What is supported
 
 - Embedding watermarks into floating-point vectors produced by standard
   embedding models.
-- Verifying vectors that were previously embedded through the Mnemo API.
+- Verifying vectors that were previously embedded through the Mnemo API
+  under your account.
 - Common storage and serialization round-trips (float32/float64 casts,
   JSON encoding, typical database persistence).
-- Policy-aware responses: each verification reflects the policy that
-  was attached at embed time (TTL, usage class, retention, region).
+- Policy attachment: `ttl_hours`, `usage_class`, `retention` and
+  `region` can be attached at embed time. Verify's `policy_ok` reflects
+  at most the TTL; the other fields are not evaluated by verify.
 
 ## What is not guaranteed
 
@@ -56,18 +64,18 @@ reflects the verdict the API returned.
 - **Tamper resistance.** Mnemo provides traceability for normal data
   pipelines, not cryptographic resistance against a motivated
   adversary with full knowledge of the system.
-- **Lossless embedding.** The watermarking process introduces a small
-  perturbation to the input vector. For typical downstream tasks this
-  is negligible, but it is not zero.
+- **Lossless embedding.** The returned vector is a measurably perturbed
+  copy of the input; check retrieval quality on your own data before
+  switching over.
 
 ## Operational note
 
 Confidence scores returned by the API are intended as a relative
 signal, not a probability. Applications that need a hard accept/reject
 decision should pair the verdict with their own threshold appropriate
-to their use case. When the API returns `None`, treat the vector as
-unverified — do not infer the absence of a watermark with certainty
-from a single call.
+to their use case. When `verify()` returns `None`, treat the vector as
+not verified for your account — do not infer the absence of a
+watermark with certainty from a single call.
 
 ## Right to modify
 

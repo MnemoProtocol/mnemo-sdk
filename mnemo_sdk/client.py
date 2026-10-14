@@ -18,7 +18,7 @@ from mnemo_sdk.types import (
     VerifySignals,
 )
 
-_SDK_VERSION = "3.1.3"
+_SDK_VERSION = "3.1.2"
 _USER_AGENT = f"mnemo-protocol/{_SDK_VERSION} python"
 
 # Service-set fields the client may NEVER supply on a subject; a subject carrying
@@ -167,7 +167,7 @@ class MnemoClient:
         subject_proof=None,
         idempotency_key: Optional[str] = None,
     ) -> Optional[VerifyResult]:
-        """Verify whether a vector contains a Mnemo watermark.
+        """Check whether a vector resolves to an object registered to the caller's account.
 
         Every call sends an ``Idempotency-Key`` header. The same value is sent on
         each internal retry of the call (rate limit, connection error, timeout),
@@ -189,7 +189,9 @@ class MnemoClient:
                 service can check it, and the service decides when it is used.
 
         Returns:
-            VerifyResult if a watermark is detected, None otherwise.
+            VerifyResult when the API answers verified=true; None when the API
+            answers verified=false (attribution to the caller's account could
+            not be shown; a normal result that counts as one verification).
         """
         payload: Dict[str, Any] = {
             "vector": _serialize_vector(vector),

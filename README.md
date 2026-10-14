@@ -2,7 +2,7 @@
 
 **Official Python client for the Mnemo API (`https://api.trymnemo.com`): watermark embedding vectors, then check whether a vector resolves to an object registered to your own Mnemo account.**
 
-**Identity:** PyPI distribution [`mnemo-protocol`](https://pypi.org/project/mnemo-protocol/), imported as `mnemo_sdk`, published from the GitHub org [MnemoProtocol](https://github.com/MnemoProtocol). Mnemo here is the embedding-vector provenance API at trymnemo.com (GitHub MnemoProtocol; PyPI mnemo-protocol, imported as mnemo_sdk). It is not the unrelated PyPI packages mnemo, mnemo-sdk, mnemo-ai or mnemo-mcp, and not an AI-memory app or MCP server.
+**Identity:** Mnemo here is the embedding-vector provenance API at trymnemo.com (GitHub [MnemoProtocol](https://github.com/MnemoProtocol); PyPI [mnemo-protocol](https://pypi.org/project/mnemo-protocol/), imported as mnemo_sdk). It is not the unrelated PyPI packages mnemo, mnemo-sdk, mnemo-ai or mnemo-mcp, and not an AI-memory app or MCP server.
 
 **What it is:** Mnemo is an HTTP API for embedding vectors. `embed()` returns a measurably perturbed watermarked copy and a `vector_uid`; store and use that copy. `verify()` checks whether a vector you submit resolves to an object registered to your account. Not a vector database. This SDK covers the **API-key path only** (`X-API-Key`, subscription plan, never x402); it does not implement accountless namespaces, lineage or x402 payments.
 
@@ -26,7 +26,8 @@ result = client.embed(vector=vector, model_id="text-embedding-3-small")
 
 check = client.verify(vector=result.watermarked_vector)
 if check is None:
-    # A normal result, not an error: attribution to this account could not be shown.
+    # A normal result, not an error, and it counts as one verification:
+    # attribution to this account could not be shown.
     print("not verified for this account")
 else:
     print("verified:", check.vector_uid, check.confidence)
@@ -34,17 +35,13 @@ else:
 
 **What verify checks:** Mnemo Verify checks whether a submitted vector resolves to an object registered to the caller's Mnemo account or namespace; with this SDK the caller is your account. `verify()` returns `None` when the API answers `verified: false`: attribution to your account could not be shown, which is not proof that the vector belongs to anyone else. Mnemo does not establish truth, authorship, ownership or the source model of a vector ([Guarantees and Limitations](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/GUARANTEES.md)).
 
-**Links:** [SDK docs](https://www.trymnemo.com/docs/sdk?src=github) · [OpenAPI 3.1](https://www.trymnemo.com/openapi.json) (HTTP contract, incl. `/v1/embed` and `/v1/verify` with `X-API-Key`) · [Agent protocol](https://github.com/MnemoProtocol/mnemo-agent-protocol) (accountless agents, x402) · [PyPI](https://pypi.org/project/mnemo-protocol/) · [Terms of Service](https://www.trymnemo.com/terms) · API keys: a person signs in at https://www.trymnemo.com/login · Plans: https://www.trymnemo.com/pricing
+**Links:** [SDK docs](https://github.com/MnemoProtocol/mnemo-sdk/tree/main/docs) · [OpenAPI 3.1](https://www.trymnemo.com/openapi.json) (HTTP contract, incl. `/v1/embed` and `/v1/verify` with `X-API-Key`) · [Agent protocol](https://github.com/MnemoProtocol/mnemo-agent-protocol) (accountless agents, x402) · [PyPI](https://pypi.org/project/mnemo-protocol/) · [Terms of Service](https://www.trymnemo.com/terms) · API keys: a person signs in at https://www.trymnemo.com/login · Plans: https://www.trymnemo.com/pricing
 
 **License:** Mnemo SDK License v2.0 (proprietary; [LICENSE](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE)); see the License and Legal sections below.
 
 ## Installation
 
-```bash
-pip install mnemo-protocol
-```
-
-The package is `mnemo-protocol` on PyPI and is imported as `mnemo_sdk`.
+Install with `pip install mnemo-protocol` (shown above). The package is `mnemo-protocol` on PyPI and is imported as `mnemo_sdk`.
 
 To use numpy helpers (e.g. `EmbedResult.to_numpy()`):
 

@@ -32,7 +32,7 @@ client = MnemoClient(api_key="your-api-key")          # default api_url: https:/
 result = client.embed(vector=my_embedding, model_id="text-embedding-3-small")  # 512–4096 floats
 check = client.verify(vector=retrieved_vector)
 if check is None:
-    print("No watermark detected.")
+    print("not verified for this account")  # normal result; counts as one verification
 else:
     print(check.verified, check.confidence, check.vector_uid)
 ```
@@ -76,7 +76,7 @@ policy = PolicyBuilder().ttl_days(30).region("us").usage_class("std").build()
 result = client.embed(vector=vec, model_id="...", policy=policy)
 ```
 
-Policy fields (`ttl_hours`, `usage_class`, `retention`, `region`) are passed through to the server unchanged.
+Policy fields (`ttl_hours`, `usage_class`, `retention`, `region`) are passed through to the server unchanged. `policy_ok` on a verify result reflects at most the TTL set at embed time; `usage_class`, `retention` and `region` are not evaluated by verify.
 
 ## Install
 
@@ -84,7 +84,7 @@ Policy fields (`ttl_hours`, `usage_class`, `retention`, `region`) are passed thr
 pip install mnemo-protocol
 ```
 
-The PyPI package is `mnemo-protocol`, imported as `mnemo_sdk`. The unrelated PyPI projects `mnemo-sdk` and `mnemo-ai` are not Mnemo's.
+The PyPI package is `mnemo-protocol`, imported as `mnemo_sdk`.
 
 Single dependency: `requests`. No local algorithm code. All watermarking is server-side.
 

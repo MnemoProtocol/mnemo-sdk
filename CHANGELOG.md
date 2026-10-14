@@ -1,11 +1,13 @@
 # Changelog
 
-## 3.1.3 (unreleased)
+## Unreleased
 
-Documentation and package metadata only. No API or behavior changes; the only code change is the version string (`__version__`, User-Agent `mnemo-protocol/3.1.3 python`).
+Documentation and package metadata only. No API or behavior changes and no code changes beyond docstrings. The version stays 3.1.2 on `main`; the version bump happens in the release commit.
 
 - README first screen: package identity (PyPI `mnemo-protocol`, import `mnemo_sdk`, GitHub org MnemoProtocol, API `https://api.trymnemo.com`) and a note that the unrelated PyPI packages `mnemo`, `mnemo-sdk`, `mnemo-ai` and `mnemo-mcp` are not Mnemo's; a minimal embed + verify example that handles `verify()` returning `None`; what verify checks (objects registered to your own account); links to the SDK docs, OpenAPI, agent protocol, PyPI and Terms. License, copyright and patent notices are unchanged.
-- Package metadata: new summary, keywords, Audience/OS/Topic classifiers, and project URLs for Documentation (https://www.trymnemo.com/docs/sdk), Source, Issues, Security and Changelog. License expression unchanged (`LicenseRef-Mnemo-SDK-2.0`).
+- Verify wording across `README.md`, `llms.txt`, `agent-manifest.json`, `docs/*.md`, the examples and the `verify()` / `VerifyResult` docstrings: `None` means the API answered `verified: false` (attribution to your account could not be shown; not proof the vector belongs to anyone else; counts as one verification), not "no watermark detected". `embed()` returns a measurably perturbed watermarked copy ("invisible", "drop-in replacement" and "negligible" removed). `confidence` is a relative signal, not a probability.
+- `docs/GUARANTEES.md`: `policy_ok` reflects at most the TTL set at embed time; `usage_class`, `retention` and `region` are not evaluated by verify.
+- Package metadata: new summary, keywords, Audience/OS/Topic classifiers, and project URLs for Documentation (GitHub `docs/`), Source, Issues, Security, Changelog and License. License expression unchanged (`LicenseRef-Mnemo-SDK-2.0`).
 - `llms.txt`: same identity note and verify-scope wording as the README.
 
 ## 3.1.2 (2026-10-12)
