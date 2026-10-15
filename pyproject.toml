@@ -42,7 +42,7 @@ dev = ["pytest>=7.4", "requests-mock>=1.11"]
 
 [project.urls]
 Homepage = "https://www.trymnemo.com"
-Documentation = "https://github.com/MnemoProtocol/mnemo-sdk/tree/main/docs"
+Documentation = "https://www.trymnemo.com/docs/sdk"
 Source = "https://github.com/MnemoProtocol/mnemo-sdk"
 Issues = "https://github.com/MnemoProtocol/mnemo-sdk/issues"
 Security = "https://github.com/MnemoProtocol/mnemo-sdk/blob/main/SECURITY.md"
