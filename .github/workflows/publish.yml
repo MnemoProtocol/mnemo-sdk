@@ -56,6 +56,10 @@ jobs:
             echo "::error::CHANGELOG.md has no '## $PV' entry"
             exit 1
           fi
+          if grep -E "^## ${PV//./\\.}( |$)" CHANGELOG.md | grep -qi 'unreleased'; then
+            echo "::error::CHANGELOG.md still marks $PV as unreleased; date the entry in the release PR"
+            exit 1
+          fi
           git fetch --no-tags origin main
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
             echo "::error::the tagged commit $GITHUB_SHA is not on main; release only merged, reviewed code"
@@ -111,4 +115,5 @@ jobs:
           path: dist/
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        # Pinned to the v1.14.3 commit: this step holds the OIDC id-token.
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
