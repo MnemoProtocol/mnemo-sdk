@@ -8,7 +8,7 @@
 
 **Provenance:** in Mnemo, provenance means a vector resolves to a `vector_uid` that Mnemo issued at embed time and that is still attributable to the account or namespace that issued it. It is not similarity: a nearest-neighbour search can say a vector is close to something, not whether a vector you hold was issued by your own pipeline. Verify answers that narrower question.
 
-**Use it when** you produce or store embeddings and later need to check whether a vector you hold (for example one returned by retrieval) was issued to your own account, or need to record and read a verified parent-to-child derivation.
+**Use it when** you produce or store embeddings and later need to check whether a vector you hold (for example one returned by retrieval) was issued to your own account, or (through the HTTP API, not this SDK) need to record and read a verified parent-to-child derivation.
 
 **Not for:** vectors never embedded through Mnemo (there is no retroactive coverage); vectors issued to another account or namespace (verify cannot check another party's vectors); similarity search or storage; judging truth, authorship, ownership or the source model; file or document authenticity.
 
@@ -189,16 +189,23 @@ except MnemoAPIError as e:
     if e.code is MnemoErrorCode.QUOTA_EXCEEDED:
         # 402 insufficient_credits: the plan's included verifications are used up.
         print("Verification allowance exhausted:", e.details)
+    elif e.retryable:
+        # Transient (429, 409 request_in_progress, 503 verification_unavailable,
+        # connection failures): safe to call again, later.
+        print(f"Retry later ({e.server_code or e.code.value}), retry_after={e.retry_after}")
     else:
-        print(f"API error {e.status_code}: {e.message}")
+        print(f"API error {e.status_code} {e.server_code}: {e.message}")
 except MnemoValidationError as e:
     print(f"Validation error: {e.message}")
 ```
 
 ## Retries
 
-The client retries `429` responses (waiting `Retry-After` when present) and
-connection errors or timeouts, up to `retry_attempts` times. `verify()` sends an `Idempotency-Key` header: your `idempotency_key` verbatim, or a uuid4 generated for that call. The same value is sent on every internal retry of the call, so a verify retried after a lost response is answered from the stored result instead of being counted again. Pass your own `idempotency_key` to make a retry that you issue (a second `verify()` call for the same request) idempotent too. If the first attempt is still in flight when a retry arrives, the server answers `409 request_in_progress` (raised as `MnemoAPIError`); retry later with the same key.
+The client retries `429` responses, waiting `Retry-After` when present (delta-seconds or an HTTP date; it does not sleep after the last attempt, and a wait longer than 60 seconds is raised at once as `RATE_LIMIT` with `retry_after` set). It also retries connection failures. `retry_attempts` is the total number of attempts per call, at least one. TLS and certificate errors are never retried.
+
+`embed()` is not idempotent: each successful embed registers a new object. From 3.1.4 the SDK re-sends an embed only when the request certainly did not reach the server (a `429`, or a connection that was never established). After a read timeout or a dropped connection the outcome is unknown, so it raises `MnemoAPIError` (`code=NETWORK_ERROR`, `retryable=False`) instead of risking a second object. Retry it yourself only if a duplicate object is acceptable to you.
+
+`verify()` sends an `Idempotency-Key` header: your `idempotency_key` verbatim, or a uuid4 generated for that call. The same value is sent on every internal retry of the call (including after timeouts), so a verify retried after a lost response is answered from the stored result instead of being counted again. Every `MnemoAPIError` raised by `verify()` carries the key it sent as `e.idempotency_key`. To retry the same verification yourself, pass it back: `verify(vector, idempotency_key=e.idempotency_key)`. If the first attempt is still in flight when a retry arrives, the server answers `409 request_in_progress` (`e.retryable` is `True`); retry later with the same key.
 
 ## API Reference
 

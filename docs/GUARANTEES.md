@@ -70,10 +70,10 @@ reflects the verdict the API returned.
 
 ## Operational note
 
-Confidence scores returned by the API are intended as a relative
-signal, not a probability. Applications that need a hard accept/reject
-decision should pair the verdict with their own threshold appropriate
-to their use case. When `verify()` returns `None`, treat the vector as
+Decide on the verdict: a `VerifyResult` means verified for your
+account, `None` means not verified. The confidence score returned by
+the API is a diagnostic signal that accompanies the verdict; it is not
+a probability and not a threshold to apply yourself. When `verify()` returns `None`, treat the vector as
 not verified for your account. `None` does not show that the vector
 carries no watermark, and it does not show that the vector belongs to
 anyone else.

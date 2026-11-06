@@ -1,10 +1,17 @@
 """HTTP client for the Mnemo watermarking API."""
 
 import json
+import math
 import time
 import uuid
+import warnings
+from email.utils import parsedate_to_datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlsplit
+
 import requests
+from urllib3.exceptions import NewConnectionError
 
 from mnemo_sdk.errors import MnemoAPIError, MnemoErrorCode, MnemoValidationError
 from mnemo_sdk.types import (
@@ -18,8 +25,15 @@ from mnemo_sdk.types import (
     VerifySignals,
 )
 
-_SDK_VERSION = "3.1.3"
+_SDK_VERSION = "3.1.4"
 _USER_AGENT = f"mnemo-protocol/{_SDK_VERSION} python"
+
+# Longest Retry-After the client will sleep through on its own. A longer wait
+# is raised at once as RATE_LIMIT with ``retry_after`` set, so a call never
+# blocks for minutes inside the SDK.
+_MAX_RETRY_AFTER_SECONDS = 60.0
+
+_LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 # Service-set fields the client may NEVER supply on a subject; a subject carrying
 # any of these is rejected client-side (the runtime would also reject it
@@ -81,7 +95,7 @@ class MnemoClient:
 
     def __init__(
         self,
-        api_key: str,
+        api_key: Optional[str] = None,
         *,
         api_url: str = DEFAULT_API_URL,
         timeout: int = 30,
@@ -94,10 +108,16 @@ class MnemoClient:
             self._timeout = config.timeout
             self._retry_attempts = config.retry_attempts
         else:
+            if api_key is None:
+                raise MnemoValidationError("api_key is required (or pass config=MnemoConfig(...))")
             self._api_key = api_key
             self._api_url = api_url.rstrip("/")
             self._timeout = timeout
             self._retry_attempts = retry_attempts
+        # retry_attempts is the total number of attempts per call; a call
+        # always makes at least one request.
+        self._retry_attempts = max(1, self._retry_attempts)
+        _warn_if_cleartext(self._api_url)
 
         self._session = requests.Session()
         self._session.headers.update(
@@ -107,6 +127,13 @@ class MnemoClient:
                 "Content-Type": "application/json",
                 "Accept": "application/json",
             }
+        )
+
+    def __repr__(self) -> str:
+        # Never include the API key.
+        return (
+            f"MnemoClient(api_url={self._api_url!r}, timeout={self._timeout!r}, "
+            f"retry_attempts={self._retry_attempts!r})"
         )
 
     # ------------------------------------------------------------------
@@ -150,7 +177,11 @@ class MnemoClient:
         if subject is not None:
             payload["subject"] = _serialize_subject(subject)
 
-        data = self._post_with_retry("/v1/embed", payload)
+        # embed registers a new object and the API has no idempotent replay
+        # for it, so the SDK never re-sends an embed whose request may already
+        # have reached the server (see _post_with_retry).
+        data = self._post_with_retry("/v1/embed", payload, idempotent=False)
+        _require_fields(data, ("vector_uid", "watermarked_vector", "created_at", "dimensions"), "embed")
         raw_proof = data.get("subject_proof")
         return EmbedResult(
             vector_uid=data["vector_uid"],
@@ -200,9 +231,17 @@ class MnemoClient:
             payload["subject_proof"] = _serialize_subject_proof(subject_proof)
 
         # Resolved ONCE per call, outside the retry loop.
-        headers = {"Idempotency-Key": _resolve_idempotency_key(idempotency_key)}
+        key = _resolve_idempotency_key(idempotency_key)
+        headers = {"Idempotency-Key": key}
 
-        data = self._post_with_retry("/v1/verify", payload, headers=headers)
+        try:
+            data = self._post_with_retry("/v1/verify", payload, headers=headers)
+        except MnemoAPIError as exc:
+            # Expose the key so the caller can retry this same verification
+            # (verify(..., idempotency_key=exc.idempotency_key)) without it
+            # being counted twice.
+            exc.idempotency_key = key
+            raise
 
         if not data.get("verified"):
             return None
@@ -215,6 +254,7 @@ class MnemoClient:
                 code=MnemoErrorCode.SERVER_ERROR,
             )
 
+        _require_fields(data, ("confidence",), "verify")
         raw_signals = data.get("signals")
         return VerifyResult(
             verified=True,
@@ -230,7 +270,8 @@ class MnemoClient:
         Returns:
             Dictionary with ``status``, ``version`` and ``timestamp``.
         """
-        return self._get_with_retry("/v1/health")
+        # The health route is unauthenticated: do not send the API key to it.
+        return self._get_with_retry("/v1/health", headers={"X-API-Key": None})
 
     def usage(self) -> Dict[str, Any]:
         """Retrieve current API usage statistics (``GET /v1/usage``).
@@ -252,110 +293,110 @@ class MnemoClient:
         payload: Dict[str, Any],
         *,
         headers: Optional[Dict[str, str]] = None,
+        idempotent: bool = True,
     ) -> Dict[str, Any]:
-        """``headers``: per-request headers, sent unchanged on every attempt."""
-        url = f"{self._api_url}{endpoint}"
-        last_exc: Optional[Exception] = None
-        request_kwargs: Dict[str, Any] = {"json": payload, "timeout": self._timeout}
-        if headers:
-            request_kwargs["headers"] = dict(headers)
+        """``headers``: per-request headers, sent unchanged on every attempt.
 
-        for attempt in range(self._retry_attempts):
-            try:
-                resp = self._session.post(url, **request_kwargs)
-
-                if resp.status_code == 429:
-                    retry_after = float(resp.headers.get("Retry-After", 2 ** attempt))
-                    time.sleep(retry_after)
-                    last_exc = MnemoAPIError(
-                        message="Rate limited",
-                        status_code=429,
-                        code=MnemoErrorCode.RATE_LIMIT,
-                    )
-                    continue
-
-                if resp.status_code >= 400:
-                    _raise_api_error(resp)
-
-                return resp.json()
-
-            except requests.exceptions.ConnectionError as exc:
-                last_exc = MnemoAPIError(
-                    message=f"Connection error: {exc}",
-                    status_code=0,
-                    code=MnemoErrorCode.NETWORK_ERROR,
-                )
-                if attempt < self._retry_attempts - 1:
-                    time.sleep(2 ** attempt)
-                    continue
-                raise last_exc from exc
-
-            except requests.exceptions.Timeout as exc:
-                last_exc = MnemoAPIError(
-                    message=f"Request timed out: {exc}",
-                    status_code=0,
-                    code=MnemoErrorCode.NETWORK_ERROR,
-                )
-                if attempt < self._retry_attempts - 1:
-                    time.sleep(2 ** attempt)
-                    continue
-                raise last_exc from exc
-
-        if last_exc is not None:
-            raise last_exc
-        raise MnemoAPIError(
-            message="Exhausted retries",
-            status_code=0,
-            code=MnemoErrorCode.NETWORK_ERROR,
+        ``idempotent=False`` (embed): the request is retried only when it
+        certainly did not reach the server (429, or the connection was never
+        established). A timeout or dropped connection after the request was
+        sent is raised at once with ``retryable=False``, because retrying could
+        register a second object.
+        """
+        return self._request_with_retry(
+            "post", endpoint, json_payload=payload, headers=headers, idempotent=idempotent
         )
 
-    def _get_with_retry(self, endpoint: str) -> Dict[str, Any]:
+    def _get_with_retry(
+        self, endpoint: str, *, headers: Optional[Dict[str, Optional[str]]] = None
+    ) -> Dict[str, Any]:
+        return self._request_with_retry("get", endpoint, headers=headers, idempotent=True)
+
+    def _request_with_retry(
+        self,
+        method: str,
+        endpoint: str,
+        *,
+        json_payload: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, Any]] = None,
+        idempotent: bool = True,
+    ) -> Dict[str, Any]:
         url = f"{self._api_url}{endpoint}"
-        last_exc: Optional[Exception] = None
+        send = self._session.post if method == "post" else self._session.get
+        request_kwargs: Dict[str, Any] = {"timeout": self._timeout}
+        if json_payload is not None:
+            request_kwargs["json"] = json_payload
+        if headers:
+            request_kwargs["headers"] = dict(headers)
+        attempts = self._retry_attempts
 
-        for attempt in range(self._retry_attempts):
+        for attempt in range(attempts):
+            last_attempt = attempt == attempts - 1
             try:
-                resp = self._session.get(url, timeout=self._timeout)
-
-                if resp.status_code == 429:
-                    retry_after = float(resp.headers.get("Retry-After", 2 ** attempt))
-                    time.sleep(retry_after)
-                    last_exc = MnemoAPIError(
-                        message="Rate limited",
-                        status_code=429,
-                        code=MnemoErrorCode.RATE_LIMIT,
-                    )
-                    continue
-
-                if resp.status_code >= 400:
-                    _raise_api_error(resp)
-
-                return resp.json()
-
-            except requests.exceptions.ConnectionError as exc:
-                last_exc = MnemoAPIError(
-                    message=f"Connection error: {exc}",
+                resp = send(url, **request_kwargs)
+            except requests.exceptions.SSLError as exc:
+                # Certificate and TLS failures are not transient: never retried.
+                raise MnemoAPIError(
+                    message=f"TLS error: {exc}",
                     status_code=0,
                     code=MnemoErrorCode.NETWORK_ERROR,
-                )
-                if attempt < self._retry_attempts - 1:
-                    time.sleep(2 ** attempt)
-                    continue
-                raise last_exc from exc
-
-            except requests.exceptions.Timeout as exc:
-                last_exc = MnemoAPIError(
-                    message=f"Request timed out: {exc}",
+                    retryable=False,
+                ) from exc
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exc:
+                not_sent = _request_never_sent(exc)
+                if not idempotent and not not_sent:
+                    raise MnemoAPIError(
+                        message=(
+                            f"Request outcome unknown ({exc.__class__.__name__}): the server "
+                            f"may have processed it. {endpoint} is not retried automatically "
+                            "because a retry could create a second object."
+                        ),
+                        status_code=0,
+                        code=MnemoErrorCode.NETWORK_ERROR,
+                        retryable=False,
+                    ) from exc
+                kind = "Request timed out" if isinstance(exc, requests.exceptions.Timeout) else "Connection error"
+                err = MnemoAPIError(
+                    message=f"{kind}: {exc}",
                     status_code=0,
                     code=MnemoErrorCode.NETWORK_ERROR,
+                    retryable=True,
                 )
-                if attempt < self._retry_attempts - 1:
-                    time.sleep(2 ** attempt)
-                    continue
-                raise last_exc from exc
+                if last_attempt:
+                    raise err from exc
+                time.sleep(2 ** attempt)
+                continue
+            except requests.exceptions.ChunkedEncodingError as exc:
+                # The response broke off while it was being read: the request
+                # was processed. Safe to repeat only for idempotent calls.
+                err = MnemoAPIError(
+                    message=f"Response interrupted: {exc}",
+                    status_code=0,
+                    code=MnemoErrorCode.NETWORK_ERROR,
+                    retryable=idempotent,
+                )
+                if not idempotent or last_attempt:
+                    raise err from exc
+                time.sleep(2 ** attempt)
+                continue
 
-        if last_exc is not None:
-            raise last_exc
+            if resp.status_code == 429:
+                retry_after = _parse_retry_after(resp.headers.get("Retry-After"))
+                err = _build_api_error(resp)
+                err.message = "Rate limited"
+                err.retry_after = retry_after
+                wait = retry_after if retry_after is not None else float(2 ** attempt)
+                if last_attempt or wait > _MAX_RETRY_AFTER_SECONDS:
+                    raise err
+                time.sleep(wait)
+                continue
+
+            if resp.status_code >= 400:
+                raise _build_api_error(resp)
+
+            return _json_body(resp)
+
+        # Unreachable: every path above returns or raises on the last attempt.
         raise MnemoAPIError(
             message="Exhausted retries",
             status_code=0,
@@ -369,14 +410,124 @@ class MnemoClient:
 
 
 def _serialize_vector(vector) -> List[float]:
-    """Convert a vector to a plain Python list of floats."""
-    if hasattr(vector, "tolist"):
-        return vector.tolist()
-    return list(vector)
+    """Convert a vector to a plain Python list of floats.
+
+    NaN and infinity cannot be sent as JSON; they are refused here with a
+    ``MnemoValidationError`` instead of escaping as a ``requests`` error."""
+    values = vector.tolist() if hasattr(vector, "tolist") else list(vector)
+    for i, x in enumerate(values):
+        if isinstance(x, float) and not math.isfinite(x):
+            raise MnemoValidationError(f"vector contains a non-finite value ({x}) at index {i}")
+    return values
+
+
+def _warn_if_cleartext(api_url: str) -> None:
+    """Warn when the API key would travel over plain http to a non-local host."""
+    parts = urlsplit(api_url)
+    if parts.scheme == "http" and (parts.hostname or "") not in _LOCAL_HOSTS:
+        warnings.warn(
+            f"api_url {api_url!r} uses http://; the API key would be sent unencrypted. "
+            "Use https:// (http is intended only for localhost).",
+            UserWarning,
+            stacklevel=3,
+        )
+
+
+def _request_never_sent(exc: Exception) -> bool:
+    """True only when the connection was never established, so the server
+    cannot have received the request (connect timeout, DNS failure, connection
+    refused). Read timeouts and dropped connections return False."""
+    if isinstance(exc, requests.exceptions.ConnectTimeout):
+        return True
+    if not isinstance(exc, requests.exceptions.ConnectionError):
+        return False
+    seen = set()
+    stack: List[Any] = [exc]
+    while stack:
+        cur = stack.pop()
+        if cur is None or id(cur) in seen:
+            continue
+        seen.add(id(cur))
+        if isinstance(cur, NewConnectionError):
+            return True
+        stack.extend(getattr(cur, "args", ()) or ())
+        stack.append(getattr(cur, "reason", None))
+        stack.append(getattr(cur, "__cause__", None))
+        stack.append(getattr(cur, "__context__", None))
+    return False
+
+
+def _parse_retry_after(value: Optional[str]) -> Optional[float]:
+    """Parse ``Retry-After`` (delta-seconds or an HTTP date). None if absent or unparseable."""
+    if value is None:
+        return None
+    value = str(value).strip()
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError, IndexError):
+        return None
+    if when is None:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=timezone.utc)
+    return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
+
+
+def _json_body(resp: requests.Response) -> Dict[str, Any]:
+    """Decode a successful response; a non-JSON or non-object body is an API error."""
+    try:
+        data = resp.json()
+    except ValueError as exc:  # json.JSONDecodeError and requests' JSONDecodeError
+        raise MnemoAPIError(
+            message=f"Invalid JSON in API response (HTTP {resp.status_code})",
+            status_code=resp.status_code,
+            code=MnemoErrorCode.SERVER_ERROR,
+        ) from exc
+    if not isinstance(data, dict):
+        raise MnemoAPIError(
+            message=f"Unexpected API response shape (HTTP {resp.status_code}): expected a JSON object",
+            status_code=resp.status_code,
+            code=MnemoErrorCode.SERVER_ERROR,
+        )
+    return data
+
+
+def _require_fields(data: Dict[str, Any], fields, operation: str) -> None:
+    missing = [f for f in fields if f not in data]
+    if missing:
+        raise MnemoAPIError(
+            message=f"Invalid {operation} response: missing {', '.join(missing)}",
+            status_code=502,
+            code=MnemoErrorCode.SERVER_ERROR,
+        )
+
+
+def _retryable_for(status: int, server_code: Optional[str]) -> Optional[bool]:
+    """Retry guidance that the API contract supports objectively."""
+    if status in (408, 429):
+        return True
+    if status == 409:
+        # Another attempt with the same Idempotency-Key is still running.
+        return server_code == "request_in_progress"
+    if status == 503 and server_code == "verification_unavailable":
+        # Contract: the verification was not completed and nothing was charged.
+        return True
+    if 400 <= status < 500:
+        return False
+    return None
 
 
 def _raise_api_error(resp: requests.Response) -> None:
-    """Parse an error response and raise MnemoAPIError.
+    """Parse an error response and raise MnemoAPIError."""
+    raise _build_api_error(resp)
+
+
+def _build_api_error(resp: requests.Response) -> MnemoAPIError:
+    """Parse an error response into a MnemoAPIError.
 
     The API answers errors in three shapes:
 
@@ -396,11 +547,17 @@ def _raise_api_error(resp: requests.Response) -> None:
     except (json.JSONDecodeError, ValueError):
         body = None
 
+    server_code: Optional[str] = None
     if isinstance(body, dict):
         detail = body.get("detail")
         code = body.get("code")
+        if isinstance(code, str):
+            server_code = code
+        elif isinstance(detail, dict) and isinstance(detail.get("code"), str):
+            server_code = detail["code"]
         if "error" in body or "message" in body:
-            message = body.get("error", body.get("message"))
+            text = body.get("error", body.get("message"))
+            message = str(text) if text is not None else resp.text
         elif isinstance(detail, str):
             message = detail
         elif isinstance(detail, dict):
@@ -428,9 +585,12 @@ def _raise_api_error(resp: requests.Response) -> None:
     }
     error_code = code_map.get(resp.status_code, MnemoErrorCode.SERVER_ERROR)
 
-    raise MnemoAPIError(
+    return MnemoAPIError(
         message=message,
         status_code=resp.status_code,
         code=error_code,
         details=details,
+        server_code=server_code,
+        retry_after=_parse_retry_after(resp.headers.get("Retry-After")) if resp.headers else None,
+        retryable=_retryable_for(resp.status_code, server_code),
     )
