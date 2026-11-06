@@ -1,5 +1,19 @@
 name: Publish to PyPI
 
+# Runs only when a GitHub Release is published. A release reaches PyPI only if
+# ALL of these hold, in order:
+#   1. release-guard: the tag is v<version>, equals pyproject.toml and
+#      mnemo_sdk.__version__, CHANGELOG.md has a "## <version>" entry, the
+#      tagged commit is on main, and the release is not a draft or prerelease.
+#   2. ci: the full CI workflow (tests on 3.9-3.13, numpy extra, build and
+#      package checks, security checks) passes on the exact tagged commit.
+#   3. build: one sdist + wheel is built from the tagged commit and checked.
+#   4. publish: runs in the "pypi" environment. Configure that environment
+#      with a required reviewer and a v* tag deployment policy (RELEASING.md),
+#      so the upload waits for an explicit human approval.
+# PyPI uploads cannot be deleted. A bad release is yanked and replaced by a
+# new patch version.
+
 on:
   release:
     types: [published]
@@ -7,34 +21,86 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: publish-pypi
+  cancel-in-progress: false
+
 jobs:
-  build:
+  release-guard:
+    name: release guard
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tag, version, changelog and branch agree
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+          DRAFT: ${{ github.event.release.draft }}
+        run: |
+          set -euo pipefail
+          if [ "$DRAFT" = "true" ] || [ "$PRERELEASE" = "true" ]; then
+            echo "::error::draft or prerelease releases are never published to PyPI"
+            exit 1
+          fi
+          PV=$(python3 -c "import re,pathlib;print(re.search(r'^version\s*=\s*\"([^\"]+)\"',pathlib.Path('pyproject.toml').read_text(),re.M).group(1))")
+          IV=$(python3 -c "import re,pathlib;print(re.search(r'^__version__\s*=\s*\"([^\"]+)\"',pathlib.Path('mnemo_sdk/__init__.py').read_text(),re.M).group(1))")
+          echo "tag=$TAG pyproject=$PV __version__=$IV"
+          if [ "$TAG" != "v$PV" ] || [ "$PV" != "$IV" ]; then
+            echo "::error::tag must be v<version> and match pyproject.toml and mnemo_sdk.__version__"
+            exit 1
+          fi
+          if ! grep -qE "^## ${PV//./\\.}( |$)" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## $PV' entry"
+            exit 1
+          fi
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::the tagged commit $GITHUB_SHA is not on main; release only merged, reviewed code"
+            exit 1
+          fi
+          echo "release guard passed for $TAG ($GITHUB_SHA)"
 
+  ci:
+    name: CI on the tagged commit
+    needs: release-guard
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    name: build distribution
+    needs: [release-guard, ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-
+          python-version: "3.12"
       - name: Install build tools
-        run: pip install build
-
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
       - name: Build package
-        run: python -m build .
-
+        run: python -m build
+      - name: twine check (strict)
+        run: python -m twine check --strict dist/*
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
+          if-no-files-found: error
 
   publish:
+    name: publish to PyPI (needs approval in the pypi environment)
     needs: build
     runs-on: ubuntu-latest
-    environment: pypi
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/project/mnemo-protocol/
     permissions:
       id-token: write
     steps:
