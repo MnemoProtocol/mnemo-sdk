@@ -9,9 +9,13 @@ DEFAULT_API_URL = "https://api.trymnemo.com"
 
 @dataclass
 class MnemoConfig:
-    """Configuration for the Mnemo API client."""
+    """Configuration for the Mnemo API client.
 
-    api_key: str
+    ``api_key`` is excluded from ``repr()`` so printing or logging a config
+    never reveals the credential.
+    """
+
+    api_key: str = field(repr=False)
     api_url: str = DEFAULT_API_URL
     timeout: int = 30
     retry_attempts: int = 3

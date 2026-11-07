@@ -2,6 +2,19 @@
 
 Release dates are the UTC publish dates of the GitHub releases.
 
+## 3.1.4 (unreleased)
+
+Security and correctness patch. No change to the API calls the SDK makes, the request bodies, authentication, or the `verify()` / `embed()` return types.
+
+- **API key never shown by `repr()`.** `MnemoConfig.api_key` is excluded from `repr()`, and `MnemoClient` has a `repr()` without the key. The key is no longer sent to the unauthenticated `GET /v1/health`.
+- **`embed()` is never re-sent once it may have reached the server.** Before, a read timeout or dropped connection made the SDK send the embed again, which could register a second object. Now `embed()` is retried only on `429` and on connections that were never established. Otherwise it raises `MnemoAPIError` (`NETWORK_ERROR`, `retryable=False`). **Behaviour change:** callers that relied on the automatic resend now see the error and decide themselves. `verify()`, `health()` and `usage()` keep their retries (`verify()` is protected by its `Idempotency-Key`).
+- **Retry loop fixes.** No sleep after the last attempt. `Retry-After` given as an HTTP date is parsed (it raised `ValueError` before). A `Retry-After` longer than 60 seconds is raised at once as `RATE_LIMIT` with `retry_after`, instead of blocking the call. `retry_attempts=0` (or negative) now sends one request instead of none. TLS and certificate errors are not retried. A response that breaks off while being read (`ChunkedEncodingError`) is raised as `MnemoAPIError`, and retried only for idempotent calls.
+- **Typed error attributes (additive).** `MnemoAPIError` gains `server_code`, `retry_after`, `retryable` and, for `verify()`, `idempotency_key`, the key that was sent, so a caller can retry the same verification after `409 request_in_progress`. Existing attributes, codes and the constructor's positional arguments are unchanged.
+- **Response and input validation.** A success response that is not a JSON object, or that lacks a required field, raises `MnemoAPIError` (`SERVER_ERROR`) instead of a raw `JSONDecodeError` or `KeyError`. A vector containing NaN or infinity raises `MnemoValidationError` before any request, instead of a `requests` error.
+- `MnemoClient(config=MnemoConfig(...))` no longer requires `api_key` to be passed a second time. A plain `http://` `api_url` to a host other than localhost emits a `UserWarning`.
+- The package ships a `py.typed` marker (PEP 561).
+- Docs: README "Use it when" no longer suggests lineage is in this SDK. `docs/GUARANTEES.md` no longer advises applying your own confidence threshold, which the agent protocol rules out. Retry and error documentation updated.
+
 ## 3.1.3 (2026-10-15)
 
 Documentation and package metadata only. No API or behavior changes and no code changes beyond docstrings.

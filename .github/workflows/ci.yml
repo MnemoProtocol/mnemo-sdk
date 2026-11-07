@@ -1,0 +1,188 @@
+name: CI
+
+# Pull-request and main-branch CI for mnemo-protocol (import mnemo_sdk).
+# publish.yml calls this same workflow on the exact release commit, so a
+# release cannot reach PyPI unless these checks pass on what is being released.
+#
+# Read-only: no secrets, no publication. Tests never call the live API.
+# Required status check for branch protection: "CI gate".
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: tests (Python ${{ matrix.python-version }})
+    # Python 3.9 has no build for ubuntu-latest (26.04); run it on 24.04 while
+    # requires-python still includes 3.9.
+    runs-on: ${{ matrix.python-version == '3.9' && 'ubuntu-24.04' || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]"
+      - name: Run tests
+        run: python -m pytest -q -p no:cacheprovider
+
+  test-numpy:
+    name: tests with numpy extra
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package with numpy extra
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev,numpy]"
+      - name: Run tests
+        run: python -m pytest -q -p no:cacheprovider
+
+  build:
+    name: build and package checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+      - name: Version is consistent (pyproject, __version__)
+        run: |
+          python - <<'PY'
+          import re, pathlib, sys
+          pyproject = pathlib.Path("pyproject.toml").read_text()
+          init = pathlib.Path("mnemo_sdk/__init__.py").read_text()
+          pv = re.search(r'^version\s*=\s*"([^"]+)"', pyproject, re.M).group(1)
+          iv = re.search(r'^__version__\s*=\s*"([^"]+)"', init, re.M).group(1)
+          print(f"pyproject={pv} __version__={iv}")
+          sys.exit(0 if pv == iv else "version mismatch between pyproject.toml and mnemo_sdk/__init__.py")
+          PY
+      - name: Build sdist and wheel
+        run: python -m build
+      - name: twine check (strict)
+        run: python -m twine check --strict dist/*
+      - name: Wheel contains only the public package
+        run: |
+          python - <<'PY'
+          import glob, sys, zipfile
+          whl = glob.glob("dist/*.whl")
+          assert len(whl) == 1, whl
+          names = zipfile.ZipFile(whl[0]).namelist()
+          bad = [n for n in names
+                 if not (n.startswith("mnemo_sdk/") or ".dist-info/" in n)]
+          if bad:
+              sys.exit(f"unexpected files in wheel: {bad}")
+          meta = zipfile.ZipFile(whl[0]).read(
+              next(n for n in names if n.endswith(".dist-info/METADATA"))).decode()
+          if "Private :: Do Not Upload" in meta:
+              sys.exit("public wheel must not carry Private :: Do Not Upload")
+          print(f"{whl[0]}: {len(names)} files, all under mnemo_sdk/ or dist-info")
+          PY
+      - name: Install the built wheel in a clean venv and import it
+        run: |
+          python -m venv /tmp/wheelcheck
+          /tmp/wheelcheck/bin/pip install dist/*.whl
+          cd /tmp && /tmp/wheelcheck/bin/python -c "import mnemo_sdk; print('import OK', mnemo_sdk.__version__)"
+
+  security:
+    name: security checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: No private implementation symbols in the public SDK
+        # Same token list as the MnemoV2 SDK leakage gate. The public SDK is a
+        # plain HTTP client of /v1 and must never contain watermarking,
+        # cryptographic or server-internal names.
+        run: |
+          FORBIDDEN=(
+            "FWHT" "fwht" "QIM" "qim" "BCH" "bch" "HKDF" "hkdf"
+            "MnemoEmbedder" "MnemoVerifier" "SpectralTransform"
+            "decoded_bits" "hmac_tag" "\\bber\\b"
+            "machine_binding" "derive_tenant_key" "permutation"
+            "hkdf_salt" "BCHCodec" "QIMEmbedder"
+            "MnemoCrypto" "spectral_embed" "spectral_extract"
+            "mid_band" "guard_band" "cosine_floor"
+            "bchlib" "mnemo_core" "_core"
+            "MnemoSDK" "local_mode" "offline_mode"
+            "LicenseGuard" "LicenseCacheEntry" "TrialManager"
+            "master_key" "tenant_key"
+          )
+          FOUND=0
+          for token in "${FORBIDDEN[@]}"; do
+            if grep -rnE "$token" mnemo_sdk/ examples/ docs/ README.md llms.txt agent-manifest.json pyproject.toml; then
+              echo "::error::forbidden token: $token"
+              FOUND=1
+            fi
+          done
+          exit $FOUND
+      - name: No API keys or private keys committed
+        run: |
+          # Real-format Mnemo API keys (mnemo_sk_<hex> / mnemo_sk_<env>_<hex>),
+          # PEM private keys, AWS/GitHub/Stripe tokens.
+          PATTERN='mnemo_sk_([a-z]+_)?[0-9a-f]{32,}|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36,}|sk_live_[A-Za-z0-9]{16,}|rk_live_[A-Za-z0-9]{16,}'
+          if git grep -nIE "$PATTERN" -- . ':!.github/workflows/ci.yml'; then
+            echo "::error::possible secret committed"
+            exit 1
+          fi
+          echo "OK: no secret patterns"
+      - name: Dependency vulnerability audit (runtime dependencies only)
+        run: |
+          # Audit a clean venv holding only the package and its runtime
+          # dependencies, not the runner's tooling.
+          python -m venv /tmp/runtime
+          /tmp/runtime/bin/python -m pip install --upgrade pip
+          /tmp/runtime/bin/python -m pip install .
+          python -m pip install pip-audit
+          SITE=$(/tmp/runtime/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
+          pip-audit --path "$SITE" --progress-spinner off
+
+  gate:
+    name: CI gate
+    if: always()
+    needs: [test, test-numpy, build, security]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Every required job succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          for r in $RESULTS; do
+            if [ "$r" != "success" ]; then
+              echo "::error::a required CI job did not succeed ($r)"
+              exit 1
+            fi
+          done
+          echo "CI gate passed"
