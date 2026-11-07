@@ -139,7 +139,11 @@ except MnemoValidationError as e:
     print(f"Input error: {e.message}")
 ```
 
-The client automatically retries on HTTP 429 (rate limit) responses, using the `Retry-After` header when available, and on connection errors and timeouts. `verify()` sends an `Idempotency-Key` header: your `idempotency_key` verbatim, or a uuid4 generated for that call. The same value is sent on every internal retry of the call, so a verify retried after a lost response is answered from the stored result instead of being counted again. Pass your own `idempotency_key` to make a retry that you issue (a second `verify()` call for the same request) idempotent too. If the first attempt is still in flight when a retry arrives, the server answers `409 request_in_progress` (raised as `MnemoAPIError`); retry later with the same key.
+The client retries `429` responses, waiting `Retry-After` when present (delta-seconds or an HTTP date; it does not sleep after the last attempt, and a wait longer than 60 seconds is raised at once as `RATE_LIMIT` with `retry_after` set). It also retries connection failures. `retry_attempts` is the total number of attempts per call, at least one. TLS and certificate errors are never retried.
+
+`embed()` is not idempotent: each successful embed registers a new object. From 3.1.4 the SDK re-sends an embed only when the request certainly did not reach the server (a `429`, or a connection that was never established). After a read timeout or a dropped connection the outcome is unknown, so it raises `MnemoAPIError` (`code=NETWORK_ERROR`, `retryable=False`) instead of risking a second object. Retry it yourself only if a duplicate object is acceptable to you.
+
+`verify()` sends an `Idempotency-Key` header: your `idempotency_key` verbatim, or a uuid4 generated for that call. The same value is sent on every internal retry of the call (including after timeouts), so a verify retried after a lost response is answered from the stored result instead of being counted again. Every `MnemoAPIError` raised by `verify()` carries the key it sent as `e.idempotency_key`. To retry the same verification yourself, pass it back: `verify(vector, idempotency_key=e.idempotency_key)`. If the first attempt is still in flight when a retry arrives, the server answers `409 request_in_progress` (`e.retryable` is `True`); retry later with the same key.
 
 ## HTTP Endpoints Summary
 

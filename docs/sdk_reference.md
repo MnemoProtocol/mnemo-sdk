@@ -12,7 +12,7 @@ The primary client for interacting with the Mnemo watermarking API.
 
 ```python
 MnemoClient(
-    api_key: str,
+    api_key: Optional[str] = None,
     *,
     api_url: str = "https://api.trymnemo.com",
     timeout: int = 30,
@@ -25,11 +25,11 @@ MnemoClient(
 
 | Name             | Type                    | Default                   | Description                              |
 |------------------|-------------------------|---------------------------|------------------------------------------|
-| `api_key`        | `str`                   | (required)                | Your Mnemo account API key, sent as `X-API-Key`. |
-| `api_url`        | `str`                   | `https://api.trymnemo.com` | Base URL for the Mnemo API.            |
+| `api_key`        | `Optional[str]`         | (required unless `config`) | Your Mnemo account API key, sent as `X-API-Key` (not sent to `/v1/health`). Never shown by `repr()`. |
+| `api_url`        | `str`                   | `https://api.trymnemo.com` | Base URL for the Mnemo API. A plain `http://` URL to a host other than localhost triggers a `UserWarning` (the key would travel unencrypted). |
 | `timeout`        | `int`                   | `30`                      | Request timeout in seconds.              |
-| `retry_attempts` | `int`                   | `3`                       | Total attempts per call on `429`, connection errors and timeouts. |
-| `config`         | `Optional[MnemoConfig]` | `None`                    | Config object (overrides other params).  |
+| `retry_attempts` | `int`                   | `3`                       | Total attempts per call (at least 1) on `429`, connection failures and, for `verify()`/`health()`/`usage()`, timeouts. `embed()` is never re-sent once it may have reached the server; see Retries in the README. |
+| `config`         | `Optional[MnemoConfig]` | `None`                    | Config object (overrides other params; `api_key` may then be omitted). |
 
 ### Methods
 
@@ -90,10 +90,10 @@ class MnemoConfig:
 
 | Field            | Type  | Default                 | Description                          |
 |------------------|-------|-------------------------|--------------------------------------|
-| `api_key`        | `str` | (required)              | Your Mnemo API key.                  |
+| `api_key`        | `str` | (required)              | Your Mnemo API key. Excluded from `repr()`. |
 | `api_url`        | `str` | `https://api.trymnemo.com` | Base URL for the API.             |
 | `timeout`        | `int` | `30`                    | Request timeout in seconds.          |
-| `retry_attempts` | `int` | `3`                     | Number of retry attempts on failure. |
+| `retry_attempts` | `int` | `3`                     | Total attempts per call (at least 1). |
 
 ---
 
@@ -317,13 +317,21 @@ Raised when the Mnemo API returns an HTTP error response. Subclass of `MnemoExce
 ```python
 class MnemoAPIError(MnemoException):
     status_code: int
+    server_code: Optional[str]
+    retry_after: Optional[float]
+    retryable: Optional[bool]
+    idempotency_key: Optional[str]
 ```
 
-| Attribute     | Type  | Description              |
-|---------------|-------|--------------------------|
-| `status_code` | `int` | HTTP status code.        |
+| Attribute         | Type              | Description |
+|-------------------|-------------------|-------------|
+| `status_code`     | `int`             | HTTP status code, or `0` when no HTTP response was received (`code=NETWORK_ERROR`). |
+| `server_code`     | `Optional[str]`   | The API's own error code from the body (`{"code": ...}` or `{"detail": {"code": ...}}`), for example `insufficient_credits`, `request_in_progress`, `idempotency_key_reused`, `verification_unavailable`. `None` when the body has none. (3.1.4) |
+| `retry_after`     | `Optional[float]` | Seconds from the `Retry-After` header, or `None`. (3.1.4) |
+| `retryable`       | `Optional[bool]`  | `True` when calling again is known to be safe and may succeed (`408`, `429`, `409 request_in_progress`, `503 verification_unavailable`, connection failures, verify timeouts); `False` when it will not help or, for `embed()`, when the outcome is unknown (other `4xx`, TLS errors, embed read timeouts); `None` when the SDK cannot tell (other `5xx`). (3.1.4) |
+| `idempotency_key` | `Optional[str]`   | For `verify()` errors, the `Idempotency-Key` that was sent; pass it back to retry the same verification without a second charge. `None` for other calls. (3.1.4) |
 
-Inherits `message`, `code`, and `details` from `MnemoException`.
+Inherits `message`, `code`, and `details` from `MnemoException`. The API does not return a request identifier today, so none is exposed.
 
 ---
 
