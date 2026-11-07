@@ -1,0 +1,40 @@
+name: Contract drift
+
+# Weekly, read-only: compares tests/contract/openapi.json (the copy the
+# contract tests run against) with the published contract at
+# https://www.trymnemo.com/openapi.json. A failure means the API contract
+# changed and the SDK's contract tests need the new copy (and possibly SDK
+# changes). Anonymous GET only; no secrets; gates nothing.
+
+on:
+  schedule:
+    - cron: "17 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare vendored and published OpenAPI
+        run: |
+          set -euo pipefail
+          for i in 1 2 3; do
+            if curl -fsSL --max-time 20 https://www.trymnemo.com/openapi.json -o /tmp/published.json; then
+              break
+            fi
+            sleep 10
+          done
+          test -s /tmp/published.json
+          LOCAL=$(sha256sum tests/contract/openapi.json | cut -d' ' -f1)
+          LIVE=$(sha256sum /tmp/published.json | cut -d' ' -f1)
+          echo "vendored=$LOCAL published=$LIVE"
+          if [ "$LOCAL" != "$LIVE" ]; then
+            echo "::error::the published OpenAPI changed; update tests/contract/openapi.json and SPEC_SHA256, then re-run the contract tests"
+            diff <(python3 -m json.tool --sort-keys tests/contract/openapi.json) <(python3 -m json.tool --sort-keys /tmp/published.json) | head -100 || true
+            exit 1
+          fi
