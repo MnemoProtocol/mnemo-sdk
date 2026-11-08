@@ -13,7 +13,7 @@ Security and correctness patch. No change to the API calls the SDK makes, the re
 - **Response and input validation.** A success response that is not a JSON object, or that lacks a required field, raises `MnemoAPIError` (`SERVER_ERROR`) instead of a raw `JSONDecodeError` or `KeyError`. A vector containing NaN or infinity raises `MnemoValidationError` before any request, instead of a `requests` error.
 - `MnemoClient(config=MnemoConfig(...))` no longer requires `api_key` to be passed a second time. A plain `http://` `api_url` to a host other than localhost emits a `UserWarning`.
 - The package ships a `py.typed` marker (PEP 561).
-- Docs: README has a "Get an API key" line above the install command; its retry bullet describes the 3.1.4 behaviour, and the `MnemoConfig` example passes only `config=`. README "Use it when" no longer suggests lineage is in this SDK. `docs/GUARANTEES.md` no longer advises applying your own confidence threshold, which the agent protocol rules out. Retry and error documentation updated.
+- Docs: README has a "Get an API key" line above the install command; its retry bullet describes the 3.1.4 behaviour, and the `MnemoConfig` example passes only `config=`. README "Use it when" no longer suggests lineage is in this SDK. `docs/GUARANTEES.md` no longer advises applying your own confidence threshold, which the agent protocol rules out, and `examples/verify_example.py` no longer branches on `confidence`. README, package summary and `context7.json` describe verify in the API's own terms: whether a vector resolves to an object registered to your account, rather than whether it "was issued" to it. Retry and error documentation updated.
 
 ## 3.1.3 (2026-10-15)
 
