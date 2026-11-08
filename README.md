@@ -14,6 +14,8 @@
 
 **Lineage (HTTP API, not in this SDK):** an embed may name one parent you own; Mnemo verifies the parent before it creates the child. `GET /v1/lineage/{vector_uid}` (with your `X-API-Key`, or a namespace capability) re-verifies every link on each read and returns the chain, or `409` when a link no longer verifies. Lineage records which parent you named, not what the transformation did. See §7 of the [agent protocol](https://www.trymnemo.com/agent-protocol.md).
 
+**Get an API key:** [sign in or create a workspace](https://www.trymnemo.com/login?next=/platform/quickstart&utm_source=mnemo-sdk&utm_medium=readme&utm_campaign=mnemo-readme&utm_content=get-api-key) (a person signs in), then set `MNEMO_API_KEY` for the sample below.
+
 ```bash
 pip install mnemo-protocol
 ```
@@ -92,7 +94,7 @@ There is no public MCP server in v1; use the HTTP API.
 - **Verify** whether a vector resolves to an object registered to your Mnemo account, and retrieve its `vector_uid`.
 - **Trusted subject binding** (optional) — attach subject context at embed time and replay a server-issued proof at verify time.
 - **Policy configuration** passed through to the server on embed.
-- **Automatic retries** on rate limits (`429`, honouring `Retry-After`), connection errors and timeouts.
+- **Automatic retries** on rate limits (`429`, honouring `Retry-After`) and on connections that were never established. `verify()`, `health()` and `usage()` also retry timeouts and dropped connections (`verify()` with the same `Idempotency-Key`); `embed()` is not re-sent once it may have reached the server.
 - **Numpy integration** for seamless conversion between lists and arrays.
 
 ## Trusted Subject Binding (optional)
@@ -154,7 +156,7 @@ config = MnemoConfig(
     timeout=30,
     retry_attempts=3,
 )
-client = MnemoClient(api_key="", config=config)
+client = MnemoClient(config=config)
 ```
 
 ## Policy Configuration
