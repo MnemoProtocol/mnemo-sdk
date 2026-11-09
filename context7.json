@@ -1,5 +1,7 @@
 {
   "$schema": "https://context7.com/schema/context7.json",
+  "url": "https://context7.com/mnemoprotocol/mnemo-sdk",
+  "public_key": "pk_KAaUOFvzDiOftNrH3p7nv",
   "projectTitle": "Mnemo Python SDK (mnemo-protocol)",
   "description": "Python client for the Mnemo API: watermark embedding vectors and verify whether a vector resolves to an object registered to your own account (API key). Import as mnemo_sdk.",
   "folders": ["docs", "examples"],
