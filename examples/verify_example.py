@@ -38,7 +38,7 @@ else:
     print(f"Vector UID:  {result.vector_uid}")
     print(f"Policy OK:   {result.policy_ok}")
 
-    if result.confidence > 0.9:
-        print("Verified for this account; confidence above this example's 0.9 threshold.")
-    else:
-        print("Verified for this account; confidence at or below this example's 0.9 threshold.")
+    # Decide on the verdict: verify() returns None when the API answers
+    # verified=false. confidence is a diagnostic score, not a probability and
+    # not a threshold to apply yourself.
+    print(f"Verified for this account: resolves to {result.vector_uid}.")

@@ -6,13 +6,15 @@
 
 **What it is:** Mnemo is an HTTP API for embedding vectors. `embed()` returns a measurably perturbed watermarked copy and a `vector_uid`; store and use that copy. `verify()` checks whether a vector you submit resolves to an object registered to your account. Not a vector database. This SDK covers the **API-key path only** (`X-API-Key`, subscription plan, never x402); it does not implement accountless namespaces, lineage or x402 payments.
 
-**Provenance:** in Mnemo, provenance means a vector resolves to a `vector_uid` that Mnemo issued at embed time and that is still attributable to the account or namespace that issued it. It is not similarity: a nearest-neighbour search can say a vector is close to something, not whether a vector you hold was issued by your own pipeline. Verify answers that narrower question.
+**Provenance:** in Mnemo, provenance means a vector resolves to a `vector_uid` that Mnemo issued at embed time and that is still attributable to the account or namespace that issued it. Mnemo is not a similarity search. A nearest-neighbour search returns what is close to a vector; verify answers a narrower question, whether a vector you submit resolves to an object registered to your account.
 
-**Use it when** you produce or store embeddings and later need to check whether a vector you hold (for example one returned by retrieval) was issued to your own account, or (through the HTTP API, not this SDK) need to record and read a verified parent-to-child derivation.
+**Use it when** you produce or store embeddings and later need to check whether a vector you hold (for example one returned by retrieval) resolves to an object registered to your own account, or (through the HTTP API, not this SDK) need to record and read a verified parent-to-child derivation.
 
 **Not for:** vectors never embedded through Mnemo (there is no retroactive coverage); vectors issued to another account or namespace (verify cannot check another party's vectors); similarity search or storage; judging truth, authorship, ownership or the source model; file or document authenticity.
 
 **Lineage (HTTP API, not in this SDK):** an embed may name one parent you own; Mnemo verifies the parent before it creates the child. `GET /v1/lineage/{vector_uid}` (with your `X-API-Key`, or a namespace capability) re-verifies every link on each read and returns the chain, or `409` when a link no longer verifies. Lineage records which parent you named, not what the transformation did. See §7 of the [agent protocol](https://www.trymnemo.com/agent-protocol.md).
+
+**Get an API key:** [sign in or create a workspace](https://www.trymnemo.com/login?next=/platform/quickstart&utm_source=mnemo-sdk&utm_medium=readme&utm_campaign=mnemo-readme&utm_content=get-api-key) (a person signs in), then set `MNEMO_API_KEY` for the sample below.
 
 ```bash
 pip install mnemo-protocol
@@ -92,7 +94,7 @@ There is no public MCP server in v1; use the HTTP API.
 - **Verify** whether a vector resolves to an object registered to your Mnemo account, and retrieve its `vector_uid`.
 - **Trusted subject binding** (optional) — attach subject context at embed time and replay a server-issued proof at verify time.
 - **Policy configuration** passed through to the server on embed.
-- **Automatic retries** on rate limits (`429`, honouring `Retry-After`), connection errors and timeouts.
+- **Automatic retries** on rate limits (`429`, honouring `Retry-After`) and on connections that were never established. `verify()`, `health()` and `usage()` also retry timeouts and dropped connections (`verify()` with the same `Idempotency-Key`); `embed()` is not re-sent once it may have reached the server.
 - **Numpy integration** for seamless conversion between lists and arrays.
 
 ## Trusted Subject Binding (optional)
@@ -154,7 +156,7 @@ config = MnemoConfig(
     timeout=30,
     retry_attempts=3,
 )
-client = MnemoClient(api_key="", config=config)
+client = MnemoClient(config=config)
 ```
 
 ## Policy Configuration

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "mnemo-protocol"
 version = "3.1.4"
-description = "Python client for the Mnemo API: watermark embedding vectors and verify whether a vector was issued to your own account (API key). Import as mnemo_sdk."
+description = "Python client for the Mnemo API: watermark embedding vectors and verify whether a vector resolves to an object registered to your own account (API key). Import as mnemo_sdk."
 license = "LicenseRef-Mnemo-SDK-2.0"
 license-files = ["LICENSE"]
 readme = "README.md"
