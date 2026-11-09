@@ -7,6 +7,8 @@ SPDX header "SPDX-License-Identifier: MIT":
   examples/embed_example.py
   examples/verify_example.py
   examples/subject_binding_example.py
+  examples/langchain_rag_verify/rag_verify.py
+  examples/langchain_rag_verify/tests/test_rag_verify.py
 
 It does not apply to any other file in this repository, to the Mnemo SDK
 (the `mnemo_sdk` package), to the `mnemo-protocol` distribution, to the Mnemo
