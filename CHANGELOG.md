@@ -2,7 +2,7 @@
 
 Release dates are the UTC publish dates of the GitHub releases.
 
-## 3.1.4 (2026-11-08)
+## 3.1.4 (2026-11-09)
 
 Security and correctness patch. No change to the API calls the SDK makes, the request bodies, authentication, or the `verify()` / `embed()` return types.
 

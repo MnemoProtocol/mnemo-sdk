@@ -31,20 +31,21 @@ result = client.embed([0.1, -0.3, 0.5, ...], model_id="text-embedding-3-small")
 
 ---
 
-### `client.verify(vector)`
+### `client.verify(vector, *, subject_proof=None, idempotency_key=None)`
 
 Checks whether a vector resolves to an object registered to your Mnemo account.
 
 **Parameters:**
 - `vector` — list of floats to verify (512–4096 finite numbers)
 - `subject_proof` — optional carrier from a prior `embed()` (see below)
+- `idempotency_key` — optional string sent as the `Idempotency-Key` header; the SDK generates a uuid4 when omitted (see Retries in the README)
 
 **Returns:** `VerifyResult` when the API answers `verified: true`, `None` when it answers `verified: false`.
 
 ```python
 result = client.verify(some_vector)
-if result is not None:
-    print(result.vector_uid)
+if result is not None and result.vector_uid == expected_uid:  # the vector_uid stored at embed time
+    print("verified:", result.vector_uid)
 ```
 
 **Response fields (when verified):**

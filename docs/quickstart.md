@@ -58,12 +58,15 @@ check = client.verify(vector=result.watermarked_vector)
 
 if check is None:
     print("not verified for this account")
-else:
-    print(check.verified)    # Always True when a result is returned
-    print(check.confidence)  # Relative confidence signal, not a probability
-    print(check.vector_uid)  # vector_uid of the matched object
+elif check.vector_uid == result.vector_uid:
+    print("verified: resolves to", check.vector_uid)  # the object you embedded
     print(check.policy_ok)   # Reflects at most the TTL set at embed time
+else:
+    # Resolves to another object registered to your account, not the one you expected.
+    print("verified, but resolves to a different registered object:", check.vector_uid)
 ```
+
+Decide on whether `verify()` returned a result and on its `vector_uid`. `confidence` is a relative signal, not a probability and not a threshold to apply yourself.
 
 `verify()` returns `None` when the API answers `verified: false`: attribution to your account could not be shown, which is not proof that the vector belongs to anyone else. It is a normal result, not an error, and it counts as one verification.
 
@@ -98,7 +101,8 @@ When the plan's verifications are used up, `POST /v1/verify` answers
 raises `MnemoAPIError` with `code == MnemoErrorCode.QUOTA_EXCEEDED`.
 
 Agents without an account do not use this SDK: they use the Mnemo Agent API
-directly (0.01 USDC per healthy verification via x402 on Base mainnet). See
+directly (0.01 USD per healthy verification via x402 on Base or MPP on Tempo,
+or 500 verifications for 5.00 USD). See
 https://github.com/MnemoProtocol/mnemo-agent-protocol.
 
 ## Using Policies
