@@ -36,7 +36,6 @@ if result is None:
     print("Not verified for this account (a normal result; counts as one verification).")
 else:
     print(f"Verified:    {result.verified}")
-    print(f"Confidence:  {result.confidence}")
     print(f"Vector UID:  {result.vector_uid}")
     print(f"Policy OK:   {result.policy_ok}")
 

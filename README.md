@@ -4,7 +4,7 @@
 
 **Identity:** Mnemo here is the embedding-vector provenance API at trymnemo.com (GitHub [MnemoProtocol](https://github.com/MnemoProtocol); PyPI [mnemo-protocol](https://pypi.org/project/mnemo-protocol/), imported as mnemo_sdk). It is not the unrelated PyPI packages mnemo, mnemo-sdk, mnemo-ai or mnemo-mcp, and not an AI-memory app or MCP server.
 
-**What it is:** Mnemo is an HTTP API for embedding vectors. `embed()` returns a measurably perturbed watermarked copy and a `vector_uid`; store and use that copy. `verify()` checks whether a vector you submit resolves to an object registered to your account. Not a vector database. This SDK covers the **API-key path only** (`X-API-Key`, subscription plan, never x402); it does not implement accountless namespaces, lineage or x402 payments.
+**What it is:** Mnemo is an HTTP API for embedding vectors. `embed()` returns a measurably perturbed watermarked copy and a `vector_uid`; store and use that copy. `verify()` checks whether a vector you submit resolves to an object registered to your account. Not a vector database. This SDK covers the **API-key path only** (`X-API-Key`, subscription plan, never x402); it does not implement accountless namespaces, lineage or machine payments (x402 or MPP).
 
 **Provenance:** in Mnemo, provenance means a vector resolves to a `vector_uid` that Mnemo issued at embed time and that is still attributable to the account or namespace that issued it. Mnemo is not a similarity search. A nearest-neighbour search returns what is close to a vector; verify answers a narrower question, whether a vector you submit resolves to an object registered to your account.
 
@@ -43,7 +43,7 @@ if check is None:
 elif check.vector_uid == expected_uid:
     print("verified: resolves to", check.vector_uid)
 else:
-    # Registered to your account, but to another of your objects, not this one.
+    # Resolves to another object registered to your account, not the one you expected.
     print("verified, but resolves to a different registered object:", check.vector_uid)
 ```
 
