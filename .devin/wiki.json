@@ -1,0 +1,42 @@
+{
+  "repo_notes": [
+    {
+      "content": "Positioning: Provenance, not proximity. Mnemo Verify checks whether a submitted vector resolves to an object registered to the caller's own Mnemo account or namespace. verified: false (None from the Python SDK) is a normal result; it is not proof that the vector is foreign, unwatermarked or someone else's. Mnemo does not establish truth, authorship, ownership, authenticity or the source model of a vector, and it is not a similarity search or a vector database. Do not describe Verify as checking ownership, as cryptographic proof, or as detecting where a vector came from. Do not describe or speculate about how watermarking or verification works internally, or about the meaning of individual diagnostic fields; they are informational and callers must not base decisions on them. Callers decide on whether a vector verified and, when they know which object it should be, on comparing the returned vector_uid with the one stored at embed time; confidence is not a probability or a threshold to apply. Identity: Mnemo here is the embedding-vector provenance API at trymnemo.com (GitHub MnemoProtocol; PyPI mnemo-protocol, imported as mnemo_sdk), not the unrelated PyPI packages mnemo, mnemo-sdk, mnemo-ai or mnemo-mcp, and not an AI-memory app or MCP server. This SDK covers the API-key path only (X-API-Key, subscription plan, never machine payments); it does not implement accountless namespaces, lineage or payments."
+    }
+  ],
+  "pages": [
+    {
+      "title": "Overview",
+      "purpose": "What the Mnemo Python SDK is and is not; identity and disambiguation"
+    },
+    {
+      "title": "Getting started",
+      "purpose": "Install mnemo-protocol, get an API key, first embed and verify with the vector_uid comparison",
+      "parent": "Overview"
+    },
+    {
+      "title": "Core concepts",
+      "purpose": "Watermarked copy, vector_uid, verify results (VerifyResult or None)"
+    },
+    {
+      "title": "MnemoClient and transport",
+      "purpose": "Configuration, retries, idempotency keys and timeouts"
+    },
+    {
+      "title": "Data types",
+      "purpose": "EmbedResult, VerifyResult, Subject, SubjectProof, PolicyConfig"
+    },
+    {
+      "title": "Error handling",
+      "purpose": "MnemoAPIError, MnemoValidationError and error codes, including QUOTA_EXCEEDED"
+    },
+    {
+      "title": "Examples",
+      "purpose": "The example scripts and what each demonstrates"
+    },
+    {
+      "title": "Licensing and terms",
+      "purpose": "Mnemo SDK License, the MIT scope of listed example files, Terms of Service"
+    }
+  ]
+}
