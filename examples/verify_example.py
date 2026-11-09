@@ -15,10 +15,12 @@ client = MnemoClient(api_key="your-api-key")
 
 # A watermarked vector (in practice, this comes from a prior embed call
 # or from a database / vector store). Vectors must have 512-4096 finite numbers.
-watermarked_vector = client.embed(
+embedded = client.embed(
     vector=[random.uniform(-1.0, 1.0) for _ in range(768)],
     model_id="text-embedding-3-small",
-).watermarked_vector
+)
+watermarked_vector = embedded.watermarked_vector
+expected_uid = embedded.vector_uid  # store this next to the vector
 
 # With an API key, each verification counts against the account plan's included
 # monthly verifications. When they are used up the server answers
@@ -40,5 +42,9 @@ else:
 
     # Decide on the verdict: verify() returns None when the API answers
     # verified=false. confidence is a diagnostic score, not a probability and
-    # not a threshold to apply yourself.
-    print(f"Verified for this account: resolves to {result.vector_uid}.")
+    # not a threshold to apply yourself. Then compare the vector_uid with the
+    # one you stored at embed time.
+    if result.vector_uid == expected_uid:
+        print(f"Verified for this account: resolves to {result.vector_uid}.")
+    else:
+        print(f"Verified, but resolves to a different registered object: {result.vector_uid}.")

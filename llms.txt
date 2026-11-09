@@ -1,6 +1,6 @@
 # Mnemo Python SDK (mnemo-protocol)
 
-> Python client for the Mnemo API (PyPI `mnemo-protocol`, imported as `mnemo_sdk`). Mnemo gives embedding vectors a verifiable identity: embed a vector to get a measurably perturbed watermarked copy and a `vector_uid` (store that copy); verify checks whether a submitted vector resolves to an object registered to your own Mnemo account. The SDK authenticates with an account API key and uses that account's subscription plan. It does not implement accountless agent namespaces or x402 payments.
+> Python client for the Mnemo API (PyPI `mnemo-protocol`, imported as `mnemo_sdk`). Mnemo gives embedding vectors a verifiable identity: embed a vector to get a measurably perturbed watermarked copy and a `vector_uid` (store that copy); verify checks whether a submitted vector resolves to an object registered to your own Mnemo account. The SDK authenticates with an account API key and uses that account's subscription plan. It does not implement accountless agent namespaces or machine payments (x402 or MPP).
 
 Mnemo here is the embedding-vector provenance API at trymnemo.com (GitHub MnemoProtocol; PyPI mnemo-protocol, imported as mnemo_sdk). It is not the unrelated PyPI packages mnemo, mnemo-sdk, mnemo-ai or mnemo-mcp, and not an AI-memory app or MCP server.
 
@@ -9,7 +9,7 @@ API base: https://api.trymnemo.com
 ## Core operations
 
 - `embed(vector, model_id, *, model_version="1.0", policy=None, subject=None)` → `POST /v1/embed`. Returns `vector_uid`, `watermarked_vector`, `created_at`, `dimensions`, and `subject_proof` (only when a `subject` was supplied and the server-side subject-proof transport is enabled and configured).
-- `verify(vector, *, subject_proof=None)` → `POST /v1/verify`. Returns a `VerifyResult` (`verified`, `confidence`, `vector_uid`, `policy_ok`, optional `signals`) when the API answers `verified: true` (the vector resolves to an object registered to your account), otherwise `None` (attribution to your account could not be shown; not proof that the vector belongs to anyone else).
+- `verify(vector, *, subject_proof=None, idempotency_key=None)` → `POST /v1/verify`. Returns a `VerifyResult` (`verified`, `confidence`, `vector_uid`, `policy_ok`, optional `signals`) when the API answers `verified: true` (the vector resolves to an object registered to your account), otherwise `None` (attribution to your account could not be shown; not proof that the vector belongs to anyone else). Compare `vector_uid` with the one stored at embed time to confirm the vector is the object you expect.
 - `health()` → `GET /v1/health` (no auth required). Returns `status`, `version`, `timestamp`.
 - `usage()` → `GET /v1/usage`. Returns `embed_count`, `verify_count`, `period` (`YYYY-MM`), `tier`, `embed_limit`, `verify_limit`.
 
@@ -27,19 +27,23 @@ Header `X-API-Key: <your API key>` on every request (the SDK sets it from `Mnemo
 ## Quickstart (Python)
 
 ```python
+import os
 from mnemo_sdk import MnemoClient
-client = MnemoClient(api_key="your-api-key")          # default api_url: https://api.trymnemo.com
+client = MnemoClient(api_key=os.environ["MNEMO_API_KEY"])  # default api_url: https://api.trymnemo.com
 result = client.embed(vector=my_embedding, model_id="text-embedding-3-small")  # 512–4096 floats
-check = client.verify(vector=retrieved_vector)
+# Store result.watermarked_vector (not my_embedding) and keep result.vector_uid.
+check = client.verify(vector=result.watermarked_vector)
 if check is None:
     print("not verified for this account")  # normal result; counts as one verification
+elif check.vector_uid == result.vector_uid:
+    print("verified: resolves to", check.vector_uid)
 else:
-    print(check.verified, check.confidence, check.vector_uid)
+    print("verified, but resolves to a different registered object:", check.vector_uid)
 ```
 
 ## Agents without an account
 
-Autonomous agents without an account use the Mnemo Agent API directly over HTTP (this SDK does not wrap it): create a short-lived namespace, embed, read lineage, and pay 0.01 USDC per healthy verification via x402 on Base mainnet.
+Autonomous agents without an account use the Mnemo Agent API directly over HTTP (this SDK does not wrap it): create a short-lived namespace, embed, read lineage, and pay 0.01 USD per healthy verification via x402 on Base or MPP on Tempo, or buy 500 verifications for 5.00 USD.
 
 - Protocol: https://www.trymnemo.com/agent-protocol.md
 - Agent orientation: https://www.trymnemo.com/llms.txt

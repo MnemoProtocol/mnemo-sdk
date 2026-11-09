@@ -33,21 +33,25 @@ vector = [random.uniform(-1.0, 1.0) for _ in range(768)]
 
 result = client.embed(vector=vector, model_id="text-embedding-3-small")
 # Store result.watermarked_vector in place of `vector`, and keep result.vector_uid.
+expected_uid = result.vector_uid
 
 check = client.verify(vector=result.watermarked_vector)
 if check is None:
     # A normal result, not an error, and it counts as one verification:
     # attribution to this account could not be shown.
     print("not verified for this account")
+elif check.vector_uid == expected_uid:
+    print("verified: resolves to", check.vector_uid)
 else:
-    print("verified:", check.vector_uid, check.confidence)
+    # Registered to your account, but to another of your objects, not this one.
+    print("verified, but resolves to a different registered object:", check.vector_uid)
 ```
 
-`verify()` returns a `VerifyResult` (`verified`, `confidence`, `vector_uid`, `policy_ok`, `signals`) when the API answers `verified: true`, and `None` when it answers `verified: false`. Decide on that, not on `confidence` or `policy_ok`.
+`verify()` returns a `VerifyResult` (`verified`, `confidence`, `vector_uid`, `policy_ok`, `signals`) when the API answers `verified: true`, and `None` when it answers `verified: false`. Decide on that, not on `confidence` or `policy_ok`. When you know which object a vector should be, also compare `check.vector_uid` with the `vector_uid` you stored at embed time.
 
 **What verify checks:** Mnemo Verify checks whether a submitted vector resolves to an object registered to the caller's Mnemo account or namespace; with this SDK the caller is your account. `verify()` returns `None` when the API answers `verified: false`: attribution to your account could not be shown, which is not proof that the vector belongs to anyone else. Mnemo does not establish truth, authorship, ownership or the source model of a vector ([Guarantees and Limitations](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/GUARANTEES.md)).
 
-**Links:** [SDK docs](https://github.com/MnemoProtocol/mnemo-sdk/tree/main/docs) · [OpenAPI 3.1](https://www.trymnemo.com/openapi.json) (HTTP contract, incl. `/v1/embed` and `/v1/verify` with `X-API-Key`) · [Agent protocol](https://github.com/MnemoProtocol/mnemo-agent-protocol) (accountless agents, x402) · [PyPI](https://pypi.org/project/mnemo-protocol/) · [Terms of Service](https://www.trymnemo.com/terms) · API keys: a person signs in at https://www.trymnemo.com/login · Plans: https://www.trymnemo.com/pricing
+**Links:** [SDK docs](https://github.com/MnemoProtocol/mnemo-sdk/tree/main/docs) · [OpenAPI 3.1](https://www.trymnemo.com/openapi.json) (HTTP contract, incl. `/v1/embed` and `/v1/verify` with `X-API-Key`) · [Agent protocol](https://github.com/MnemoProtocol/mnemo-agent-protocol) (accountless agents, x402 or MPP) · [PyPI](https://pypi.org/project/mnemo-protocol/) · [Terms of Service](https://www.trymnemo.com/terms) · API keys: a person signs in at https://www.trymnemo.com/login · Plans: https://www.trymnemo.com/pricing
 
 **License:** Mnemo SDK License v2.0 (proprietary; [LICENSE](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/LICENSE)); see the License and Legal sections below.
 
@@ -81,7 +85,7 @@ There are no batch endpoints and no batch methods.
 
 ## Agents without an account
 
-Autonomous agents that have no account use the **Mnemo Agent API** directly over HTTP: create a short-lived namespace, embed, read lineage, and pay **0.01 USDC per healthy verification via x402 on Base mainnet**. This SDK does not wrap that flow. The public contract, OpenAPI document and examples are at:
+Autonomous agents that have no account use the **Mnemo Agent API** directly over HTTP: create a short-lived namespace, embed, read lineage, and pay **0.01 USD per healthy verification via x402 on Base or MPP on Tempo, or buy 500 verifications for 5.00 USD**. This SDK does not wrap that flow. The public contract, OpenAPI document and examples are at:
 
 - https://github.com/MnemoProtocol/mnemo-agent-protocol
 - https://www.trymnemo.com/agent-protocol.md
@@ -228,7 +232,7 @@ Mnemo SDK License v2.0 (proprietary; governed by Wyoming law). See [LICENSE](htt
 
 ## Legal
 
-Use of the Mnemo API, including through an automated agent, script, SDK, wallet or other client, constitutes acceptance of the Mnemo Terms of Service on behalf of the operator and of the person or entity on whose behalf it acts. [Terms of Service](https://www.trymnemo.com/terms) (version 2026-10-12) · [Privacy Policy](https://www.trymnemo.com/privacy) · [Pricing](https://www.trymnemo.com/pricing) · Security reports: security@trymnemo.com (see [SECURITY.md](SECURITY.md)).
+Use of the Mnemo API, including through an automated agent, script, SDK, wallet or other client, constitutes acceptance of the Mnemo Terms of Service on behalf of the operator and of the person or entity on whose behalf it acts. [Terms of Service](https://www.trymnemo.com/terms) (version 2026-10-12) · [Privacy Policy](https://www.trymnemo.com/privacy) · [Pricing](https://www.trymnemo.com/pricing) · Security reports: security@trymnemo.com (see [SECURITY.md](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/SECURITY.md)).
 
 Only these four files are MIT-licensed, as stated in `examples/LICENSE`, so you can copy and adapt them freely: `examples/quickstart.py`, `examples/embed_example.py`, `examples/verify_example.py` and `examples/subject_binding_example.py`. The MIT license grants no patent rights. Everything else in this repository, including the `mnemo_sdk` package, is licensed under the Mnemo SDK License (`LICENSE`). Neither license grants rights in Mnemo's hosted Services, verification technology or patents (patent pending). Use of the Services is governed by the [Terms of Service](https://www.trymnemo.com/terms), which incorporate the [Data Processing Addendum](https://www.trymnemo.com/dpa) automatically where applicable.
 

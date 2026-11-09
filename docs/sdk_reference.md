@@ -196,20 +196,7 @@ class SubjectProof:
 
 ## VerifySignals
 
-Diagnostic signals returned by the service, carried on `VerifyResult.signals`; values are informational and may change. Field names are kept for compatibility; do not build trust decisions on them.
-
-```python
-@dataclass
-class VerifySignals:
-    method: Optional[str] = None
-    spectral_status: Optional[str] = None
-    oracle_status: Optional[str] = None
-    oracle_best_dist: Optional[float] = None
-    oracle_margin: Optional[float] = None
-    oracle_candidate_count: Optional[int] = None
-    mode: Optional[str] = None
-    latency_ms: Optional[float] = None
-```
+Optional diagnostic metadata returned by the service, carried on `VerifyResult.signals` (`None` when the server omits it). It is informational, its fields may change without notice, and it is not part of the verdict: decide on whether `verify()` returned a `VerifyResult` or `None`, and on its `vector_uid`, never on `signals`.
 
 ---
 

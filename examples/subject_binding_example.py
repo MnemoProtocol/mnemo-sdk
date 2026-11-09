@@ -46,11 +46,11 @@ def main() -> None:
     if check is None:
         print("Not verified.")
         return
-    print("verified:", check.verified, "confidence:", check.confidence)
-    if check.signals is not None:
-        # Diagnostic signals returned by the service; values are informational
-        # and may change.
-        print("method:", check.signals.method, "mode:", check.signals.mode)
+    if check.vector_uid == result.vector_uid:
+        print("verified: resolves to", check.vector_uid)
+    else:
+        # Registered to your account, but to another of your objects, not this one.
+        print("verified, but resolves to a different registered object:", check.vector_uid)
 
 
 if __name__ == "__main__":

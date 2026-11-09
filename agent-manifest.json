@@ -3,7 +3,7 @@
   "name": "Mnemo Python SDK",
   "package": "mnemo-protocol",
   "version": "3.1.4",
-  "description": "Python client for the Mnemo API: get a measurably perturbed watermarked copy of an embedding vector, then check whether a vector resolves to an object registered to your Mnemo account. Authenticates with an account API key; does not implement accountless agent namespaces or x402 payments.",
+  "description": "Python client for the Mnemo API: get a measurably perturbed watermarked copy of an embedding vector, then check whether a vector resolves to an object registered to your Mnemo account. Authenticates with an account API key; does not implement accountless agent namespaces or machine payments (x402 or MPP).",
   "homepage": "https://www.trymnemo.com",
   "api_base": "https://api.trymnemo.com",
   "repository": "https://github.com/MnemoProtocol/mnemo-sdk",
@@ -79,7 +79,7 @@
 
   "accountless_agents": {
     "supported_by_this_sdk": false,
-    "summary": "Agents without an account use the Mnemo Agent API directly over HTTP: a short-lived namespace and 0.01 USDC per healthy verification via x402 on Base mainnet (eip155:8453).",
+    "summary": "Agents without an account use the Mnemo Agent API directly over HTTP: a short-lived namespace and 0.01 USD per healthy verification via x402 (USDC on Base, eip155:8453) or MPP on Tempo (USDC.e), or 500 verifications for 5.00 USD.",
     "protocol": "https://www.trymnemo.com/agent-protocol.md",
     "manifest": "https://www.trymnemo.com/agent-manifest.json",
     "repository": "https://github.com/MnemoProtocol/mnemo-agent-protocol"
