@@ -167,10 +167,33 @@ jobs:
           SITE=$(/tmp/runtime/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')
           pip-audit --path "$SITE" --progress-spinner off
 
+  example-langchain:
+    name: example langchain_rag_verify (Python ${{ matrix.python-version }})
+    # Offline tests of examples/langchain_rag_verify against the SDK in this
+    # checkout. langchain-core 1.x needs Python 3.10+. LangChain is a
+    # dependency of the example only, never of the SDK.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install the SDK from this checkout and the example's requirements
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install . -r examples/langchain_rag_verify/requirements-test.txt
+      - name: Run the example's tests (offline)
+        run: python -m pytest -q -p no:cacheprovider examples/langchain_rag_verify/tests
+
   gate:
     name: CI gate
     if: always()
-    needs: [test, test-numpy, build, security]
+    needs: [test, test-numpy, build, security, example-langchain]
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:

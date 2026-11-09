@@ -221,6 +221,8 @@ Full reference documentation is in the [docs/](https://github.com/MnemoProtocol/
 - [SDK Reference](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/sdk_reference.md)
 - [Guarantees and Limitations](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/GUARANTEES.md)
 
+Integration example: [verify retrieved chunks before they reach a LangChain prompt](https://github.com/MnemoProtocol/mnemo-sdk/tree/main/examples/langchain_rag_verify) (`langchain-core`; LangChain is a dependency of the example only, never of the SDK).
+
 ## Requirements
 
 - Python 3.9+
