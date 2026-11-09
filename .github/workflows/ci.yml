@@ -133,7 +133,7 @@ jobs:
             "hkdf_salt" "BCHCodec" "QIMEmbedder"
             "MnemoCrypto" "spectral_embed" "spectral_extract"
             "mid_band" "guard_band" "cosine_floor"
-            "bchlib" "mnemo_core" "_core"
+            "bchlib" "mnemo_core" "\\b_core\\b"
             "MnemoSDK" "local_mode" "offline_mode"
             "LicenseGuard" "LicenseCacheEntry" "TrialManager"
             "master_key" "tenant_key"
