@@ -221,6 +221,8 @@ Full reference documentation is in the [docs/](https://github.com/MnemoProtocol/
 - [SDK Reference](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/sdk_reference.md)
 - [Guarantees and Limitations](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/docs/GUARANTEES.md)
 
+Integration example: [verify retrieved chunks before they reach a LangChain prompt](https://github.com/MnemoProtocol/mnemo-sdk/tree/main/examples/langchain_rag_verify) (`langchain-core`; LangChain is a dependency of the example only, never of the SDK).
+
 ## Requirements
 
 - Python 3.9+
@@ -234,6 +236,6 @@ Mnemo SDK License v2.0 (proprietary; governed by Wyoming law). See [LICENSE](htt
 
 Use of the Mnemo API, including through an automated agent, script, SDK, wallet or other client, constitutes acceptance of the Mnemo Terms of Service on behalf of the operator and of the person or entity on whose behalf it acts. [Terms of Service](https://www.trymnemo.com/terms) (version 2026-10-12) · [Privacy Policy](https://www.trymnemo.com/privacy) · [Pricing](https://www.trymnemo.com/pricing) · Security reports: security@trymnemo.com (see [SECURITY.md](https://github.com/MnemoProtocol/mnemo-sdk/blob/main/SECURITY.md)).
 
-Only these four files are MIT-licensed, as stated in `examples/LICENSE`, so you can copy and adapt them freely: `examples/quickstart.py`, `examples/embed_example.py`, `examples/verify_example.py` and `examples/subject_binding_example.py`. The MIT license grants no patent rights. Everything else in this repository, including the `mnemo_sdk` package, is licensed under the Mnemo SDK License (`LICENSE`). Neither license grants rights in Mnemo's hosted Services, verification technology or patents (patent pending). Use of the Services is governed by the [Terms of Service](https://www.trymnemo.com/terms), which incorporate the [Data Processing Addendum](https://www.trymnemo.com/dpa) automatically where applicable.
+Only these six files are MIT-licensed, as stated in `examples/LICENSE`, so you can copy and adapt them freely: `examples/quickstart.py`, `examples/embed_example.py`, `examples/verify_example.py`, `examples/subject_binding_example.py`, `examples/langchain_rag_verify/rag_verify.py` and `examples/langchain_rag_verify/tests/test_rag_verify.py`. The MIT license grants no patent rights. Everything else in this repository, including the `mnemo_sdk` package, is licensed under the Mnemo SDK License (`LICENSE`). Neither license grants rights in Mnemo's hosted Services, verification technology or patents (patent pending). Use of the Services is governed by the [Terms of Service](https://www.trymnemo.com/terms), which incorporate the [Data Processing Addendum](https://www.trymnemo.com/dpa) automatically where applicable.
 
 Copyright © Mnemo LLC. All rights reserved. Patent pending. Viewing this repository does not grant a license; rights are granted only as expressly stated in the applicable license and Terms of Service.
