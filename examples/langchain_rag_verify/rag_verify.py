@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: MIT
 # Copyright (c) 2026 Mnemo LLC. Example code only — see examples/LICENSE for scope.
 # Use of the Mnemo Services is governed by https://www.trymnemo.com/terms.
-"""Verify retrieved chunks with Mnemo before they reach a LangChain prompt.
+"""Gate retrieved chunks on their stored vectors before they reach a LangChain prompt.
 
   ingest    your embedding -> Mnemo embed() -> store the watermarked copy and
             its vector_uid in the vector store
@@ -14,7 +14,9 @@
 The gate answers one question per hit: does the vector in your store still
 resolve to the object your pipeline registered for that row? A row written
 without registration, or whose vector no longer resolves to its own
-vector_uid, is held back.
+vector_uid, is held back. The gate never reads the chunk text: it does not
+detect text edited after ingest, and a passed chunk is not evidence that its
+text is authentic.
 
 Run:  pip install -r requirements.txt
       export MNEMO_API_KEY=...   # an account API key: https://www.trymnemo.com/login
