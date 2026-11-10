@@ -9,6 +9,7 @@ grep, the engine the gate itself uses.
 BLOCKED probes must fail the gate; ALLOWED probes must pass it. Third-party
 packages whose names end in _core (langchain_core, pydantic_core) are allowed;
 the internal _core module and known internal compound identifiers are not.
+These tests cover the _core-family patterns, not every token in the list.
 """
 
 import re
@@ -64,7 +65,9 @@ def gate_on_probe(tmp_path: Path, line: str) -> int:
             target.touch()
     (tmp_path / "mnemo_sdk" / "probe.py").write_text(line + "\n", encoding="utf-8")
     result = run_gate(tmp_path)
-    assert result.returncode in (0, 1), result.stderr  # 2 would mean a grep error
+    # The gate's `if grep` treats a grep error (for example an invalid
+    # pattern) as "no match", so fail on any grep output on stderr.
+    assert result.stderr == "", result.stderr
     return result.returncode
 
 
@@ -83,7 +86,7 @@ BLOCKED = [
     "self._core_url = core_url",
     "response = self._core_client(credential)",
     "self._core_timeout = 5.0",
-    "digest = hmac_sha256(key, canonical_core_bytes)",
+    "data = canonical_core_bytes",
     "outcome = real_core_verify(request)",
     "outcome = real_core_routed_verify(request)",
     "route = real_core_route(request)",
@@ -121,4 +124,5 @@ def test_gate_passes_on_this_repository():
     # The repository itself (including examples/ with its langchain_core
     # imports) must pass, as it does in the CI security job.
     result = run_gate(REPO_ROOT)
-    assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stderr == "", result.stderr
+    assert result.returncode == 0, result.stdout

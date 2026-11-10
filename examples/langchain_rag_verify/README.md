@@ -49,6 +49,6 @@ pip install -r requirements-test.txt
 pytest tests/
 ```
 
-The tests run offline: a fake Mnemo API answers `verify` with `verified: true` only for a vector it returned from `embed`, and DNS is disabled. They cover registered rows passing, an unregistered row (no verify call), swapped vectors, a vector that does not verify, confidence being ignored, the prompt containing only verified chunks, quota exhaustion failing closed, and `main()` end to end. The fake models nothing about how the real service decides.
+The tests run offline: a fake Mnemo API answers `verify` with `verified: true` only for a vector it returned from `embed`, and DNS is disabled. They cover registered rows passing, an unregistered row (no verify call), swapped vectors, a vector that does not verify, confidence being ignored, the prompt containing only chunks that passed the gate, quota exhaustion failing closed, and `main()` end to end. The fake models nothing about how the real service decides.
 
 Python 3.10+ (`langchain-core` 1.x). The `mnemo-protocol` SDK itself needs no LangChain.
