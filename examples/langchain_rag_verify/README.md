@@ -1,6 +1,6 @@
-# Verify retrieved chunks before they reach the prompt (LangChain)
+# Gate retrieved chunks on their stored vectors before they reach the prompt (LangChain)
 
-A retrieval-augmented generation (RAG) chain built from `langchain-core` building blocks, with a Mnemo verify gate between the retriever and the prompt. A retrieved chunk reaches the prompt only if the vector your store holds for it still resolves to the `vector_uid` your pipeline registered for that row at ingest.
+A retrieval-augmented generation (RAG) chain built from `langchain-core` building blocks, with a Mnemo verify gate between the retriever and the prompt. A retrieved chunk reaches the prompt only if the vector your store holds for it still resolves to the `vector_uid` your pipeline registered for that row at ingest. The chunk text itself is never checked (see below).
 
 ```
 ingest:   your embedding ─► Mnemo embed() ─► store watermarked copy + vector_uid
@@ -12,8 +12,9 @@ query:    retriever (similarity, LangChain) ─► Mnemo verify gate ─► prom
 - a row whose vector no longer resolves to its own `vector_uid`, for example vectors swapped between rows or replaced.
 
 **What it does not do:**
+- **It does not check the chunk text.** The gate verifies the vector stored for each row and compares the result with the `vector_uid` stored beside it; it never reads the text that goes into the prompt. It does not detect text edited after ingest, and a row that carries a copy of another registered row's vector and `vector_uid` passes. A passed row is not evidence that its text is authentic, unchanged or true. Detecting text edits needs a separate check of your own, for example a hash of each chunk's text recorded at ingest and kept outside the vector store.
 - Mnemo does not search or rank. The retriever's similarity search still decides which chunks are candidates; the gate only drops candidates that fail the check.
-- `verified` is about your own account. A held-back row is not evidence that someone else wrote it, and a passed row says nothing about whether its text is true.
+- `verified` is about your own account. A held-back row is not evidence that someone else wrote it.
 
 ## Run it
 
@@ -48,6 +49,6 @@ pip install -r requirements-test.txt
 pytest tests/
 ```
 
-The tests run offline: a fake Mnemo API answers `verify` with `verified: true` only for a vector it returned from `embed`, and DNS is disabled. They cover registered rows passing, an unregistered row (no verify call), swapped vectors, a vector that does not verify, confidence being ignored, the prompt containing only verified chunks, quota exhaustion failing closed, and `main()` end to end. The fake models nothing about how the real service decides.
+The tests run offline: a fake Mnemo API answers `verify` with `verified: true` only for a vector it returned from `embed`, and DNS is disabled. They cover registered rows passing, an unregistered row (no verify call), swapped vectors, a vector that does not verify, confidence being ignored, the prompt containing only chunks that passed the gate, quota exhaustion failing closed, and `main()` end to end. The fake models nothing about how the real service decides.
 
 Python 3.10+ (`langchain-core` 1.x). The `mnemo-protocol` SDK itself needs no LangChain.

@@ -121,7 +121,11 @@ jobs:
         with:
           python-version: "3.12"
       - name: No private implementation symbols in the public SDK
-        # Same token list as the MnemoV2 SDK leakage gate. The public SDK is a
+        # Derived from the MnemoV2 SDK leakage gate, not identical to it: here
+        # _core is matched as a whole word, so third-party packages such as
+        # langchain_core and pydantic_core pass, and known internal compound
+        # identifiers are listed explicitly. tests/test_security_gate.py runs
+        # this step against blocked and allowed probes. The public SDK is a
         # plain HTTP client of /v1 and must never contain watermarking,
         # cryptographic or server-internal names.
         run: |
@@ -133,7 +137,10 @@ jobs:
             "hkdf_salt" "BCHCodec" "QIMEmbedder"
             "MnemoCrypto" "spectral_embed" "spectral_extract"
             "mid_band" "guard_band" "cosine_floor"
-            "bchlib" "mnemo_core" "\\b_core\\b"
+            "bchlib" "mnemo_core" "\\b_core\\b" "\\b_core_"
+            "_v1_verify_core" "canonical_core_bytes" "_core_k"
+            "real_core" "subject_route_through_core" "_slow_core"
+            "best_core" "run_core_trials" "alignment_core"
             "MnemoSDK" "local_mode" "offline_mode"
             "LicenseGuard" "LicenseCacheEntry" "TrialManager"
             "master_key" "tenant_key"
